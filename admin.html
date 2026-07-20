@@ -14,6 +14,7 @@
     --green: #2A8A55; --green-light: #F0FAF4; --green-border: #9DD4B2;
     --yellow: #B8860B; --yellow-light: #FFFBEA; --yellow-border: #F0D060;
     --red: #C0392B; --red-light: #FDF0EF; --red-border: #F5B8B3;
+    --blue: #1a6fa8; --blue-light: #EBF5FB; --blue-border: #90C8E8;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
@@ -124,6 +125,7 @@
   .status-badge.pago-pendente { background: var(--yellow-light); color: var(--yellow); border-color: var(--yellow-border); }
   .status-badge.recibo { background: var(--green-light); color: var(--green); border-color: var(--green-border); }
   .status-badge.recibo-pendente { background: var(--red-light); color: var(--red); border-color: var(--red-border); }
+  .status-badge.aguardando { background: var(--blue-light); color: var(--blue); border-color: var(--blue-border); }
   .status-badge.recibo-disabled { background: var(--bg); color: var(--text-muted); border-color: var(--border); cursor: default; opacity: 0.5; }
   .status-badge:hover:not(.recibo-disabled) { filter: brightness(0.95); }
 
@@ -180,6 +182,7 @@
 
     <div class="filtros">
       <button class="filtro-btn active" onclick="setFiltro('todos', this)">Todos</button>
+      <button class="filtro-btn" onclick="setFiltro('aguardando', this)">🕐 Aguardando confirmação</button>
       <button class="filtro-btn" onclick="setFiltro('pagamento-pendente', this)">💰 Pagamento pendente</button>
       <button class="filtro-btn" onclick="setFiltro('recibo-pendente', this)">🧾 Recibo pendente</button>
     </div>
@@ -372,7 +375,9 @@ function groupByMonth(dates) {
 
 function renderLista() {
   let filtrados = dados;
-  if (filtroAtivo==='pagamento-pendente') {
+  if (filtroAtivo==='aguardando') {
+    filtrados = dados.filter(p => (p.sessoes||[]).some(iso => (p.pagamentos_cliente||{})[iso] && !(p.pagamentos||{})[iso]));
+  } else if (filtroAtivo==='pagamento-pendente') {
     filtrados = dados.filter(p => (p.sessoes||[]).some(iso => !(p.pagamentos||{})[iso]));
   } else if (filtroAtivo==='recibo-pendente') {
     filtrados = dados.filter(p => (p.sessoes||[]).some(iso => (p.pagamentos||{})[iso] && !(p.recibos||{})[iso]));
@@ -389,7 +394,9 @@ function renderLista() {
     const recs = p.recibos||{};
     const pagos = sessoes.filter(iso=>pags[iso]).length;
     const recEmitidos = sessoes.filter(iso=>recs[iso]).length;
-    const pendPag = sessoes.length - pagos;
+    const pagsCliente2 = p.pagamentos_cliente||{};
+    const aguardando2 = sessoes.filter(iso=>pagsCliente2[iso]&&!pags[iso]).length;
+    const pendPag = sessoes.length - pagos - aguardando2;
     const pendRec = pagos - recEmitidos;
     const isOpen = !!expandidos[p.id];
     const byMonth = groupByMonth(sessoes);
@@ -399,20 +406,23 @@ function renderLista() {
       freqLabel(p.frequencia),
       p.preco>0 ? fmtBRL(p.preco)+'/encontro' : '',
       `${sessoes.length} encontro${sessoes.length!==1?'s':''}`,
+      aguardando2>0 ? `<span style="color:var(--blue);font-weight:700">🕐 ${aguardando2} aguardando confirmação</span>` : '',
       pendPag>0 ? `<span style="color:var(--yellow);font-weight:700">💰 ${pendPag} pag. pendente${pendPag!==1?'s':''}</span>` : '',
       pendRec>0 ? `<span style="color:var(--red);font-weight:700">🧾 ${pendRec} recibo${pendRec!==1?'s':''} pendente${pendRec!==1?'s':''}</span>` : '',
     ].filter(Boolean).join(' · ');
 
     const encontrosHtml = byMonth.map(m => {
-      const sessHtml = m.isos.map(iso => {
+      const pagsCliente = p.pagamentos_cliente || {};
+        const sessHtml = m.isos.map(iso => {
         const pago = !!pags[iso];
         const recibo = !!recs[iso];
+        const clienteInformou = !!pagsCliente[iso] && !pago;
         return `<div class="encontro-row">
           <span class="encontro-data">${fmtData(iso)}</span>
           <span class="encontro-valor">${p.preco>0?fmtBRL(p.preco):''}</span>
           <div class="status-group">
-            <span class="status-badge ${pago?'pago':'pago-pendente'}" onclick="togglePag('${p.id}','${iso}')" title="${pago?'Clique para desmarcar':'Clique para confirmar pagamento'}">
-              ${pago?'✓ Pago':'💰 Pendente'}
+            <span class="status-badge ${pago?'pago':clienteInformou?'aguardando':'pago-pendente'}" onclick="togglePag('${p.id}','${iso}')" title="${pago?'Clique para desmarcar':clienteInformou?'Cliente informou pagamento — clique para confirmar':'Clique para confirmar pagamento'}">
+              ${pago?'✓ Pago':clienteInformou?'🕐 Cliente informou':'💰 Pendente'}
             </span>
             <span class="status-badge ${!pago?'recibo-disabled':recibo?'recibo':'recibo-pendente'}" onclick="${pago?`toggleRec('${p.id}','${iso}')`:''}" title="${!pago?'Aguardando pagamento':recibo?'Clique para desmarcar':'Clique para marcar recibo emitido'}">
               ${recibo?'✓ Recibo emitido':'🧾 Recibo pendente'}
