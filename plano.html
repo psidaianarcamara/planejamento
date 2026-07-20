@@ -103,8 +103,8 @@
 </main>
 
 <footer class="footer">
-  <div class="footer-name">Daiana Câmara</div>
-  <div class="footer-text">Planejamento Financeiro · CTA</div>
+  <div class="footer-name" id="ftr-rod1"></div>
+  <div class="footer-text" id="ftr-rod2"></div>
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -135,6 +135,25 @@ function api(method, path, body) {
     },
     body: body ? JSON.stringify(body) : undefined
   }).then(r => r.ok ? r.json() : r.json().then(e => { throw e; }));
+}
+
+async function carregarCabecalho() {
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/planejamentos?token=eq.CABECALHO_V2&select=tipo_atendimento', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    const data = await r.json();
+    if (data && data.length > 0 && data[0].tipo_atendimento) {
+      try {
+        const cab = JSON.parse(data[0].tipo_atendimento);
+        if (cab.nome) document.getElementById('hdr-nome').textContent = cab.nome;
+        if (cab.sub) document.getElementById('hdr-sub').textContent = cab.sub;
+        if (cab.esp) document.getElementById('hdr-esp').textContent = cab.esp;
+        if (cab.rod1) document.getElementById('ftr-rod1').textContent = cab.rod1;
+        if (cab.rod2) document.getElementById('ftr-rod2').textContent = cab.rod2;
+      } catch(e) {}
+    }
+  } catch(e) {}
 }
 
 async function carregar() {
@@ -254,6 +273,7 @@ function render() {
   document.getElementById('main').innerHTML = html;
 }
 
+carregarCabecalho();
 carregar();
 </script>
 </body>

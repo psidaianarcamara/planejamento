@@ -289,17 +289,37 @@
   <div id="tab-cabecalho" style="display:none">
     <div class="card">
       <div class="card-title">Editar cabeçalho da página do cliente</div>
+      <!-- CABEÇALHO ADMIN -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:12px;font-weight:700;color:var(--terra);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Cabeçalho do painel (admin)</div>
+        <div class="form-grid">
+          <div class="field full">
+            <label>Nome do painel</label>
+            <input id="adm-titulo" type="text" placeholder="Ex: Planejamento Financeiro">
+          </div>
+          <div class="field full">
+            <label>Subtítulo</label>
+            <input id="adm-sub" type="text" placeholder="Ex: Painel de gestão — uso interno">
+          </div>
+        </div>
+        <button onclick="salvarCabAdmin()" style="margin-top:10px;padding:9px 20px;background:var(--terra);color:var(--white);border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;">Salvar cabeçalho admin</button>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:20px 0"></div>
+
+      <!-- CABEÇALHO CLIENTE -->
+      <div style="font-size:12px;font-weight:700;color:var(--terra);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Cabeçalho da página do cliente</div>
       <div class="form-grid">
         <div class="field full">
           <label>Nome exibido</label>
           <input id="cab-nome" type="text" placeholder="Ex: Daiana Câmara">
         </div>
         <div class="field">
-          <label>Linha 2 (subtítulo)</label>
+          <label>Subtítulo</label>
           <input id="cab-sub" type="text" placeholder="Ex: Psicóloga">
         </div>
         <div class="field">
-          <label>Linha 3 (especialidade)</label>
+          <label>Especialidade</label>
           <input id="cab-esp" type="text" placeholder="Ex: Psicoterapia Cognitivo-Comportamental">
         </div>
         <div class="field">
@@ -311,7 +331,7 @@
           <input id="cab-rod2" type="text" placeholder="Ex: CRP 17/7490 · CTA">
         </div>
       </div>
-      <button class="btn-primary" onclick="salvarCabecalho()" style="margin-top:16px">Salvar cabeçalho</button>
+      <button class="btn-primary" onclick="salvarCabecalho()" style="margin-top:16px">Salvar cabeçalho cliente</button>
       <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:var(--radius);font-size:12px;color:var(--text-muted)">
         ⓘ Essas informações aparecem no topo da página que o cliente vê ao abrir o link.
       </div>
@@ -379,6 +399,7 @@ window.addEventListener('load', () => {
     carregarServicos();
     carregarDados();
     initDate();
+    carregarCabAdmin();
   } else {
     setTimeout(() => document.getElementById('login-senha').focus(), 100);
   }
@@ -516,7 +537,8 @@ function copiarLink() {
 
 async function carregarDados() {
   try {
-    dados = await api('GET','planejamentos?select=*&order=criado_em.desc');
+    const todos = await api('GET','planejamentos?select=*&order=criado_em.desc');
+    dados = todos.filter(p => p.nome_paciente !== '__config__' && p.nome_paciente !== '__cabecalho__');
     renderResumo();
     renderLista();
   } catch(e) {
@@ -720,12 +742,36 @@ async function deletar(id){
   toast('Excluído.','success');renderResumo();renderLista();
 }
 
+function salvarCabAdmin() {
+  const titulo = document.getElementById('adm-titulo').value.trim();
+  const sub = document.getElementById('adm-sub').value.trim();
+  const adm = { titulo, sub };
+  localStorage.setItem('dc-cabecalho-admin', JSON.stringify(adm));
+  if (titulo) document.getElementById('app-header').querySelector('.header-name').textContent = titulo;
+  if (sub) document.getElementById('app-header').querySelector('.header-sub').textContent = sub;
+  toast('Cabeçalho do admin salvo!', 'success');
+}
+
+function carregarCabAdmin() {
+  const saved = localStorage.getItem('dc-cabecalho-admin');
+  if (!saved) return;
+  const adm = JSON.parse(saved);
+  if (adm.titulo) {
+    document.getElementById('app-header').querySelector('.header-name').textContent = adm.titulo;
+    document.getElementById('adm-titulo').value = adm.titulo;
+  }
+  if (adm.sub) {
+    document.getElementById('app-header').querySelector('.header-sub').textContent = adm.sub;
+    document.getElementById('adm-sub').value = adm.sub;
+  }
+}
+
 function sair() {
   sessionStorage.removeItem('admin-auth');
   location.reload();
 }
 
-function salvarCabecalho() {
+async function salvarCabecalho() {
   const cab = {
     nome: document.getElementById('cab-nome').value.trim(),
     sub: document.getElementById('cab-sub').value.trim(),
@@ -734,30 +780,46 @@ function salvarCabecalho() {
     rod2: document.getElementById('cab-rod2').value.trim(),
   };
   localStorage.setItem('dc-cabecalho', JSON.stringify(cab));
-  // Salvar também no Supabase como configuração global
-  api('POST', 'planejamentos', {
-    token: 'CABECALHO_CONFIG',
-    nome_paciente: '__config__',
-    sessoes: [],
-    pagamentos: {},
-    recibos: {},
-    pagamentos_cliente: {},
-    forma_pagamento: {},
-    status_encontros: {},
-    tipo_atendimento: JSON.stringify(cab)
-  }).catch(() => {}); // silencioso se falhar
-  toast('Cabeçalho salvo! Será aplicado na próxima vez que o cliente abrir o link.', 'success');
+  // Salvar no Supabase para o plano.html ler
+  try {
+    // Tentar atualizar primeiro
+    const r = await fetch(SUPABASE_URL + '/rest/v1/planejamentos?token=eq.CABECALHO_V2', {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify({ tipo_atendimento: JSON.stringify(cab) })
+    });
+    const updated = await r.json();
+    if (!updated || updated.length === 0) {
+      // Não existe, criar
+      await api('POST', 'planejamentos', {
+        token: 'CABECALHO_V2', nome_paciente: '__cabecalho__',
+        sessoes: [], pagamentos: {}, recibos: {}, pagamentos_cliente: {},
+        forma_pagamento: {}, status_encontros: {},
+        tipo_atendimento: JSON.stringify(cab)
+      });
+    }
+    toast('Cabeçalho do cliente salvo e atualizado! ✓', 'success');
+  } catch(e) {
+    toast('Cabeçalho salvo localmente.', 'success');
+  }
 }
 
 function carregarCabecalho() {
   const saved = localStorage.getItem('dc-cabecalho');
-  if (!saved) return;
-  const cab = JSON.parse(saved);
-  document.getElementById('cab-nome').value = cab.nome || '';
-  document.getElementById('cab-sub').value = cab.sub || '';
-  document.getElementById('cab-esp').value = cab.esp || '';
-  document.getElementById('cab-rod1').value = cab.rod1 || '';
-  document.getElementById('cab-rod2').value = cab.rod2 || '';
+  if (saved) {
+    const cab = JSON.parse(saved);
+    document.getElementById('cab-nome').value = cab.nome || '';
+    document.getElementById('cab-sub').value = cab.sub || '';
+    document.getElementById('cab-esp').value = cab.esp || '';
+    document.getElementById('cab-rod1').value = cab.rod1 || '';
+    document.getElementById('cab-rod2').value = cab.rod2 || '';
+  }
+  const savedAdm = localStorage.getItem('dc-cabecalho-admin');
+  if (savedAdm) {
+    const adm = JSON.parse(savedAdm);
+    document.getElementById('adm-titulo').value = adm.titulo || '';
+    document.getElementById('adm-sub').value = adm.sub || '';
+  }
 }
 
 </script>
