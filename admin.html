@@ -409,13 +409,7 @@ function entrar() {
 }
 
 window.addEventListener('load', () => {
-  // Configurar botões de login
-  const btnEntrar = document.getElementById('btn-entrar');
-  const btnOlho = document.getElementById('btn-olho');
-  const inputSenha = document.getElementById('login-senha');
-  if (btnEntrar) btnEntrar.addEventListener('click', entrar);
-  if (btnOlho) btnOlho.addEventListener('click', toggleSenha);
-  if (inputSenha) inputSenha.addEventListener('keydown', function(e) { if(e.key==='Enter') entrar(); });
+  // Login configurado via onclick inline
   if (sessionStorage.getItem('admin-auth') === '1') {
     document.getElementById('login-overlay').style.display = 'none';
     document.getElementById('app-header').style.display = '';
