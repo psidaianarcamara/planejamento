@@ -792,8 +792,8 @@ function salvarCabAdmin() {
   const sub = document.getElementById('adm-sub').value.trim();
   const adm = { titulo, sub };
   localStorage.setItem('dc-cabecalho-admin', JSON.stringify(adm));
-  if (titulo) const n2 = document.getElementById('adm-hdr-nome'); if(n2) n2.textContent = titulo;
-  if (sub) const s2 = document.getElementById('adm-hdr-sub'); if(s2) s2.textContent = sub;
+  const n2 = document.getElementById('adm-hdr-nome'); if(n2 && titulo) n2.textContent = titulo;
+  const s2 = document.getElementById('adm-hdr-sub'); if(s2 && sub) s2.textContent = sub;
   toast('Cabeçalho do admin salvo!', 'success');
 }
 
