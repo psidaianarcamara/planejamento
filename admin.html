@@ -214,6 +214,7 @@
       <div class="header-sub">Painel de gestão — uso interno</div>
     </div>
     <span class="badge">Admin</span>
+    <button onclick="sair()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;color:var(--text-muted);cursor:pointer;font-family:inherit;" onmouseover="this.style.color='var(--red)';this.style.borderColor='var(--red)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">Sair</button>
   </div>
 </header>
 
@@ -222,6 +223,7 @@
     <div class="tab active" onclick="showTab('painel')">Painel de controle</div>
     <div class="tab" onclick="showTab('novo')">+ Novo planejamento</div>
     <div class="tab" onclick="showTab('servicos')">⚙️ Serviços</div>
+    <div class="tab" onclick="showTab('cabecalho')">✏️ Cabeçalho</div>
   </div>
 </div>
 
@@ -279,6 +281,39 @@
           <div class="link-text" id="link-text"></div>
           <button class="btn-copy" onclick="copiarLink()">Copiar</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CABEÇALHO -->
+  <div id="tab-cabecalho" style="display:none">
+    <div class="card">
+      <div class="card-title">Editar cabeçalho da página do cliente</div>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Nome exibido</label>
+          <input id="cab-nome" type="text" placeholder="Ex: Daiana Câmara">
+        </div>
+        <div class="field">
+          <label>Linha 2 (subtítulo)</label>
+          <input id="cab-sub" type="text" placeholder="Ex: Psicóloga">
+        </div>
+        <div class="field">
+          <label>Linha 3 (especialidade)</label>
+          <input id="cab-esp" type="text" placeholder="Ex: Psicoterapia Cognitivo-Comportamental">
+        </div>
+        <div class="field">
+          <label>Rodapé linha 1</label>
+          <input id="cab-rod1" type="text" placeholder="Ex: Daiana Câmara — Psicóloga">
+        </div>
+        <div class="field">
+          <label>Rodapé linha 2</label>
+          <input id="cab-rod2" type="text" placeholder="Ex: CRP 17/7490 · CTA">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="salvarCabecalho()" style="margin-top:16px">Salvar cabeçalho</button>
+      <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:var(--radius);font-size:12px;color:var(--text-muted)">
+        ⓘ Essas informações aparecem no topo da página que o cliente vê ao abrir o link.
       </div>
     </div>
   </div>
@@ -413,8 +448,9 @@ function toast(msg, type='') {
 }
 
 function showTab(tab) {
-  ['painel','novo','servicos'].forEach(t => document.getElementById('tab-'+t).style.display = t===tab?'':'none');
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===['painel','novo','servicos'].indexOf(tab)));
+  ['painel','novo','servicos','cabecalho'].forEach(t => document.getElementById('tab-'+t).style.display = t===tab?'':'none');
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===['painel','novo','servicos','cabecalho'].indexOf(tab)));
+  if(tab==='cabecalho') carregarCabecalho();
   if (tab === 'painel') carregarDados();
 }
 
@@ -683,6 +719,47 @@ async function deletar(id){
   dados=dados.filter(x=>x.id!==id);
   toast('Excluído.','success');renderResumo();renderLista();
 }
+
+function sair() {
+  sessionStorage.removeItem('admin-auth');
+  location.reload();
+}
+
+function salvarCabecalho() {
+  const cab = {
+    nome: document.getElementById('cab-nome').value.trim(),
+    sub: document.getElementById('cab-sub').value.trim(),
+    esp: document.getElementById('cab-esp').value.trim(),
+    rod1: document.getElementById('cab-rod1').value.trim(),
+    rod2: document.getElementById('cab-rod2').value.trim(),
+  };
+  localStorage.setItem('dc-cabecalho', JSON.stringify(cab));
+  // Salvar também no Supabase como configuração global
+  api('POST', 'planejamentos', {
+    token: 'CABECALHO_CONFIG',
+    nome_paciente: '__config__',
+    sessoes: [],
+    pagamentos: {},
+    recibos: {},
+    pagamentos_cliente: {},
+    forma_pagamento: {},
+    status_encontros: {},
+    tipo_atendimento: JSON.stringify(cab)
+  }).catch(() => {}); // silencioso se falhar
+  toast('Cabeçalho salvo! Será aplicado na próxima vez que o cliente abrir o link.', 'success');
+}
+
+function carregarCabecalho() {
+  const saved = localStorage.getItem('dc-cabecalho');
+  if (!saved) return;
+  const cab = JSON.parse(saved);
+  document.getElementById('cab-nome').value = cab.nome || '';
+  document.getElementById('cab-sub').value = cab.sub || '';
+  document.getElementById('cab-esp').value = cab.esp || '';
+  document.getElementById('cab-rod1').value = cab.rod1 || '';
+  document.getElementById('cab-rod2').value = cab.rod2 || '';
+}
+
 </script>
 </body>
 </html>
