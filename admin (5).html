@@ -199,7 +199,10 @@
     <div class="login-sub">Acesso restrito — uso interno</div>
     <div class="login-field">
       <label>Senha</label>
-      <input type="password" id="login-senha" placeholder="Digite a senha" onkeydown="if(event.key==='Enter')entrar()">
+      <div style="position:relative">
+        <input type="password" id="login-senha" placeholder="Digite a senha" onkeydown="if(event.key==='Enter')entrar()" style="width:100%;padding-right:40px">
+        <button onclick="toggleSenha()" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;padding:0;line-height:1" id="btn-olho">👁️</button>
+      </div>
     </div>
     <button class="login-btn" onclick="entrar()">Entrar</button>
     <div class="login-error" id="login-error">Senha incorreta. Tente novamente.</div>
@@ -372,6 +375,18 @@ const STATUS_LABEL = { realizado:'✓ Realizado', cancelado:'✗ Cancelado', rem
 const FORMAS_PAG = ['PIX','Transferência','Cartão'];
 
 // LOGIN
+function toggleSenha() {
+  const input = document.getElementById('login-senha');
+  const btn = document.getElementById('btn-olho');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
 function entrar() {
   const senha = document.getElementById('login-senha').value;
   if (senha === SENHA) {
