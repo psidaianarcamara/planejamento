@@ -313,6 +313,29 @@
 
       <div style="height:1px;background:var(--border);margin:20px 0"></div>
 
+      <!-- TROCAR SENHA -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:12px;font-weight:700;color:var(--terra);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Alterar senha de acesso</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Senha atual</label>
+            <input type="password" id="senha-atual" placeholder="Digite a senha atual" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Nova senha</label>
+            <input type="password" id="senha-nova" placeholder="Digite a nova senha" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Confirmar nova senha</label>
+            <input type="password" id="senha-confirma" placeholder="Repita a nova senha" autocomplete="off">
+          </div>
+        </div>
+        <button onclick="trocarSenha()" style="margin-top:10px;padding:9px 20px;background:var(--terra);color:var(--white);border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;">Salvar nova senha</button>
+        <div id="senha-erro" style="margin-top:8px;font-size:12px;color:var(--red);display:none"></div>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:20px 0"></div>
+
       <!-- CABEÇALHO CLIENTE -->
       <div style="font-size:12px;font-weight:700;color:var(--terra);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Cabeçalho da página do cliente</div>
       <div class="form-grid">
@@ -365,7 +388,7 @@ const SUPABASE_URL = 'https://hxgjfhakfhmnxzvgyjvh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_qibTEcMy85iMaK4uGv9nGA_X8DuqaBj';
 const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html','') + 'plano.html';
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const SENHA = 'daiana2025';
+let SENHA = localStorage.getItem('dc-senha') || 'daiana2025';
 
 let dados = [];
 let expandidos = {};
@@ -803,6 +826,37 @@ function carregarCabAdmin() {
     const s = document.getElementById('adm-hdr-sub'); if(s) s.textContent = adm.sub;
     document.getElementById('adm-sub').value = adm.sub;
   }
+}
+
+function trocarSenha() {
+  const atual = document.getElementById('senha-atual').value;
+  const nova = document.getElementById('senha-nova').value;
+  const confirma = document.getElementById('senha-confirma').value;
+  const erro = document.getElementById('senha-erro');
+  erro.style.display = 'none';
+
+  if (atual !== SENHA) {
+    erro.textContent = 'Senha atual incorreta.';
+    erro.style.display = 'block';
+    return;
+  }
+  if (nova.length < 6) {
+    erro.textContent = 'A nova senha deve ter ao menos 6 caracteres.';
+    erro.style.display = 'block';
+    return;
+  }
+  if (nova !== confirma) {
+    erro.textContent = 'As senhas não coincidem.';
+    erro.style.display = 'block';
+    return;
+  }
+  // Salvar nova senha
+  localStorage.setItem('dc-senha', nova);
+  SENHA = nova;
+  document.getElementById('senha-atual').value = '';
+  document.getElementById('senha-nova').value = '';
+  document.getElementById('senha-confirma').value = '';
+  toast('Senha alterada com sucesso! ✓', 'success');
 }
 
 function sair() {
