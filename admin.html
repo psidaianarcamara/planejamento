@@ -696,6 +696,7 @@ function renderLista() {
         </div>
         <div class="cliente-actions" onclick="event.stopPropagation()">
           <button class="btn-link-small" onclick="navigator.clipboard.writeText('${link}').then(()=>toast('Link copiado!','success'))">Copiar link</button>
+          <button class="btn-link-small" style="background:var(--green-light);color:var(--green);border-color:var(--green-border)" onclick="copiarMensagem('${p.nome_paciente}','${link}')">💬 Mensagem</button>
           <button class="btn-del-small" onclick="deletar('${p.id}')" title="Excluir">×</button>
         </div>
         <span class="chevron ${isOpen?'open':''}">▼</span>
@@ -857,6 +858,19 @@ function trocarSenha() {
   document.getElementById('senha-nova').value = '';
   document.getElementById('senha-confirma').value = '';
   toast('Senha alterada com sucesso! ✓', 'success');
+}
+
+function copiarMensagem(nome, link) {
+  const msg = `Olá, ${nome}! 😊
+
+Aqui é a Sophia, do Consultório Daiana Câmara.
+
+A Daiana criou um Planejamento Financeiro personalizado para facilitar o seu processo de psicoterapia! Por meio desse link, você visualiza as datas dos seus encontros e registra os pagamentos realizados.
+
+🔗 ${link}
+
+Qualquer dúvida, estamos à disposição! 💛`;
+  navigator.clipboard.writeText(msg).then(() => toast('Mensagem copiada! Cole no WhatsApp ✓', 'success'));
 }
 
 function sair() {
