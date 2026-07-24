@@ -661,10 +661,16 @@ function renderLista() {
         const forma=formas[iso]||'';
         const stLabel=stEnc?STATUS_LABEL[stEnc]:'Status';
         const stClass=stEnc||'pendente';
+        const valorCustom = (p.valores_customizados||{})[iso];
+        const valorExibido = valorCustom !== undefined ? valorCustom : p.preco;
         return `<div class="encontro-row">
           <span class="encontro-data">${fmtData(iso)}</span>
           <div class="encontro-centro">
-            <span class="encontro-valor">${p.preco>0?fmtBRL(p.preco):''}</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="encontro-valor" style="${valorCustom!==undefined?'text-decoration:line-through;opacity:0.5;font-size:11px':''}">${p.preco>0?fmtBRL(p.preco):''}</span>
+              ${valorCustom!==undefined?`<span style="font-size:13px;font-weight:700;color:var(--terra-dark)">${fmtBRL(valorCustom)}</span>`:''}
+              <button onclick="editarValorEncontro('${p.id}','${iso}',${valorExibido})" style="background:none;border:1px dashed var(--border);border-radius:6px;padding:1px 6px;font-size:11px;color:var(--text-muted);cursor:pointer;" title="Editar valor deste encontro">✏️</button>
+            </div>
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px">
               <span class="status-enc ${stClass}" onclick="ciclarStatus('${p.id}','${iso}')" title="Clique para alterar status">${stLabel}</span>
               <select class="forma-pag-select ${forma?'preenchido':''}" onchange="salvarForma('${p.id}','${iso}',this.value)">
@@ -859,6 +865,31 @@ function trocarSenha() {
   document.getElementById('senha-nova').value = '';
   document.getElementById('senha-confirma').value = '';
   toast('Senha alterada com sucesso! ✓', 'success');
+}
+
+function editarValorEncontro(id, iso, valorAtual) {
+  const novo = prompt(`Valor para o encontro de ${iso.split('-').reverse().slice(0,2).join('/')}:
+(Deixe em branco para usar o valor padrão)`, valorAtual);
+  if (novo === null) return; // cancelou
+  salvarValorEncontro(id, iso, novo.trim());
+}
+
+async function salvarValorEncontro(id, iso, valor) {
+  const p = dados.find(x => x.id === id);
+  if (!p) return;
+  const valores = {...(p.valores_customizados||{})};
+  if (valor === '' || valor === null) {
+    delete valores[iso]; // volta ao padrão
+  } else {
+    const num = parseFloat(valor.replace(',','.'));
+    if (isNaN(num)) { toast('Valor inválido.', 'error'); return; }
+    valores[iso] = num;
+  }
+  await api('PATCH', `planejamentos?id=eq.${id}`, { valores_customizados: valores });
+  p.valores_customizados = valores;
+  toast('Valor atualizado! ✓', 'success');
+  renderResumo();
+  renderLista();
 }
 
 function toggleEditarCliente(id) {
