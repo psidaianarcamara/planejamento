@@ -63,6 +63,11 @@
   .pay-label-wrap.disabled { cursor: default; opacity: 0.6; }
   .pay-check { width: 20px; height: 20px; accent-color: var(--green); cursor: pointer; flex-shrink: 0; }
   .pay-text { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+  .status-enc-cliente { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; border: 1px solid; white-space: nowrap; }
+  .status-enc-cliente.realizado { background: var(--green-light); color: var(--green); border-color: var(--green-border); }
+  .status-enc-cliente.cancelado { background: #FDF0EF; color: #C0392B; border-color: #F5B8B3; }
+  .status-enc-cliente.remarcado { background: #fef5ec; color: #d35400; border-color: #f0b27a; }
+  .status-enc-cliente.falta { background: #f8f9fa; color: #6c757d; border-color: #dee2e6; }
   .session-row.confirmado .pay-text { color: var(--green); font-weight: 700; }
   .session-row.solicitado .pay-text { color: var(--yellow); font-weight: 600; }
   .aguardando-text { font-size: 11px; color: var(--yellow); font-weight: 500; }
@@ -116,6 +121,7 @@
 <script>
 const SUPABASE_URL = 'https://hxgjfhakfhmnxzvgyjvh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_qibTEcMy85iMaK4uGv9nGA_X8DuqaBj';
+const STATUS_LABEL_CLI = { realizado: '✓ Realizado', cancelado: '✗ Cancelado', remarcado: '↩ Remarcado', falta: '— Falta' };
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 let plano = null;
@@ -244,6 +250,7 @@ function render() {
     const sessionsHtml = m.isos.map(iso => {
       const confirmado = !!pags[iso];
       const solicitado = !!pagsCliente[iso] && !confirmado;
+      const stEnc = (plano.status_encontros || {})[iso] || '';
       const rowClass = confirmado ? 'confirmado' : solicitado ? 'solicitado' : '';
       return `<div class="session-row ${rowClass}">
         <div class="session-left">
@@ -252,6 +259,7 @@ function render() {
           ${plano.preco > 0 ? '<span class="session-price">'+fmtBRL(plano.preco)+'</span>' : ''}
         </div>
         <div class="session-right">
+          ${stEnc ? `<span class="status-enc-cliente ${stEnc}">${STATUS_LABEL_CLI[stEnc]}</span>` : ''}
           <label class="pay-label-wrap ${confirmado?'disabled':''}">
             <input type="checkbox" class="pay-check"
               ${confirmado||solicitado?'checked':''}

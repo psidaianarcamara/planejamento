@@ -695,6 +695,7 @@ function renderLista() {
           <div class="cliente-meta">${metaItems}</div>
         </div>
         <div class="cliente-actions" onclick="event.stopPropagation()">
+          <button class="btn-link-small" onclick="toggleEditarCliente('${p.id}')">✏️ Editar</button>
           <button class="btn-link-small" onclick="navigator.clipboard.writeText('${link}').then(()=>toast('Link copiado!','success'))">Copiar link</button>
           <button class="btn-link-small" style="background:var(--green-light);color:var(--green);border-color:var(--green-border)" onclick="copiarMensagem('${p.nome_paciente}','${link}')">💬 Mensagem</button>
           <button class="btn-del-small" onclick="deletar('${p.id}')" title="Excluir">×</button>
@@ -858,6 +859,30 @@ function trocarSenha() {
   document.getElementById('senha-nova').value = '';
   document.getElementById('senha-confirma').value = '';
   toast('Senha alterada com sucesso! ✓', 'success');
+}
+
+function toggleEditarCliente(id) {
+  const panel = document.getElementById('editar-' + id);
+  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+async function salvarEdicaoCliente(id) {
+  const p = dados.find(x => x.id === id);
+  if (!p) return;
+  const nome = document.getElementById('edit-nome-' + id).value.trim();
+  const preco = parseFloat(document.getElementById('edit-preco-' + id).value) || 0;
+  const freq = document.getElementById('edit-freq-' + id).value;
+  if (!nome) { toast('Informe o nome do cliente', 'error'); return; }
+  try {
+    await api('PATCH', `planejamentos?id=eq.${id}`, { nome_paciente: nome, preco, frequencia: freq });
+    p.nome_paciente = nome;
+    p.preco = preco;
+    p.frequencia = freq;
+    toggleEditarCliente(id);
+    toast('Cliente atualizado! ✓', 'success');
+    renderResumo();
+    renderLista();
+  } catch(e) { toast('Erro ao salvar.', 'error'); }
 }
 
 function copiarMensagem(nome, link) {
