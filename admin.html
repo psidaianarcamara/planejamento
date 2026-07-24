@@ -597,9 +597,11 @@ function renderResumo() {
     const sess=p.sessoes||[], pags=p.pagamentos||{}, recs=p.recibos||{},
           pagsC=p.pagamentos_cliente||{}, status=p.status_encontros||{};
     totalEnc+=sess.length;
-    totalValor+=sess.length*(p.preco||0);
     sess.forEach(iso=>{
-      if(pags[iso]){totalPagos++;totalRecebido+=(p.preco||0);}
+      const valCustom = (p.valores_customizados||{})[iso];
+      const valReal = valCustom !== undefined ? valCustom : (p.preco||0);
+      totalValor += valReal;
+      if(pags[iso]){totalPagos++;totalRecebido+=valReal;}
       if(recs[iso])totalRecibos++;
       if(pagsC[iso]&&!pags[iso])totalAguard++;
       if(status[iso]==='falta')totalFaltas++;
