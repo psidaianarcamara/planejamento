@@ -190,6 +190,8 @@
     .encontro-row { grid-template-columns: 48px 1fr; }
     .status-group { grid-column: 1 / -1; justify-content: flex-start; }
   }
+  .privado-blur { filter: blur(6px); user-select: none; pointer-events: none; transition: filter 0.2s; }
+  .privado-overlay { position: fixed; inset: 0; z-index: 200; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -220,6 +222,7 @@
       <div class="header-sub" id="adm-hdr-sub">Gestão | Consultório Daiana Câmara</div>
     </div>
     <span class="badge">Admin</span>
+    <button id="btn-privado" onclick="togglePrivado()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;color:var(--text-muted);cursor:pointer;font-family:inherit;">🔒 Privado</button>
     <button onclick="sair()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;color:var(--text-muted);cursor:pointer;font-family:inherit;" onmouseover="this.style.color='var(--red)';this.style.borderColor='var(--red)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">Sair</button>
   </div>
 </header>
@@ -970,6 +973,39 @@ A Daiana criou um Planejamento Financeiro personalizado para facilitar o seu pro
 
 Qualquer dúvida, estamos à disposição! 💛`;
   navigator.clipboard.writeText(msg).then(() => toast('Mensagem copiada! Cole no WhatsApp ✓', 'success'));
+}
+
+let modoPrivado = false;
+
+function togglePrivado() {
+  modoPrivado = !modoPrivado;
+  const btn = document.getElementById('btn-privado');
+  const lista = document.getElementById('lista-clientes');
+  const resumo = document.getElementById('resumo');
+  const overlay = document.getElementById('privado-overlay');
+
+  if (modoPrivado) {
+    btn.textContent = '🔓 Revelar';
+    btn.style.color = 'var(--terra)';
+    btn.style.borderColor = 'var(--terra)';
+    lista.classList.add('privado-blur');
+    resumo.classList.add('privado-blur');
+    // Criar overlay para revelar ao clicar
+    const ov = document.createElement('div');
+    ov.id = 'privado-overlay';
+    ov.className = 'privado-overlay';
+    ov.title = 'Clique para revelar';
+    ov.onclick = togglePrivado;
+    document.body.appendChild(ov);
+  } else {
+    btn.textContent = '🔒 Privado';
+    btn.style.color = 'var(--text-muted)';
+    btn.style.borderColor = 'var(--border)';
+    lista.classList.remove('privado-blur');
+    resumo.classList.remove('privado-blur');
+    const ov = document.getElementById('privado-overlay');
+    if (ov) ov.remove();
+  }
 }
 
 function sair() {
