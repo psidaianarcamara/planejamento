@@ -670,16 +670,21 @@ function renderLista() {
           <span class="encontro-data">${fmtData(iso)}</span>
           <div class="encontro-centro">
             <div style="display:flex;align-items:center;gap:6px">
-              <span class="encontro-valor" style="${valorCustom!==undefined?'text-decoration:line-through;opacity:0.5;font-size:11px':''}">${p.preco>0?fmtBRL(p.preco):''}</span>
-              ${valorCustom!==undefined?`<span style="font-size:13px;font-weight:700;color:var(--terra-dark)">${fmtBRL(valorCustom)}</span>`:''}
+              <span style="${isOculto('valor_'+p.id)?'filter:blur(5px);user-select:none':''}">
+                <span class="encontro-valor" style="${valorCustom!==undefined?'text-decoration:line-through;opacity:0.5;font-size:11px':''}">${p.preco>0?fmtBRL(p.preco):''}</span>
+                ${valorCustom!==undefined?`<span style="font-size:13px;font-weight:700;color:var(--terra-dark)">${fmtBRL(valorCustom)}</span>`:''}
+              </span>
               <button onclick="editarValorEncontro('${p.id}','${iso}',${valorExibido})" style="background:none;border:1px dashed var(--border);border-radius:6px;padding:1px 6px;font-size:11px;color:var(--text-muted);cursor:pointer;" title="Editar valor deste encontro">✏️</button>
             </div>
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px">
               <span class="status-enc ${stClass}" onclick="ciclarStatus('${p.id}','${iso}')" title="Clique para alterar status">${stLabel}</span>
-              <select class="forma-pag-select ${forma?'preenchido':''}" onchange="salvarForma('${p.id}','${iso}',this.value)">
-                <option value="">Forma pag.</option>
-                ${FORMAS_PAG.map(f=>`<option value="${f}" ${forma===f?'selected':''}>${f}</option>`).join('')}
-              </select>
+              <span style="${isOculto('forma_'+p.id)?'filter:blur(5px);user-select:none;pointer-events:none':''}">
+                <select class="forma-pag-select ${forma?'preenchido':''}" onchange="salvarForma('${p.id}','${iso}',this.value)">
+                  <option value="">Forma pag.</option>
+                  ${FORMAS_PAG.map(f=>`<option value="${f}" ${forma===f?'selected':''}>${f}</option>`).join('')}
+                </select>
+              </span>
+              <button onclick="toggleOcultar('forma_'+p.id)" style="background:none;border:none;cursor:pointer;font-size:12px;opacity:0.5;padding:0" title="${isOculto('forma_'+p.id)?'Revelar forma de pagamento':'Ocultar forma de pagamento'}">${isOculto('forma_'+p.id)?'🙈':'👁️'}</button>
             </div>
           </div>
           <div class="status-group">
@@ -700,8 +705,19 @@ function renderLista() {
       <div class="cliente-header" onclick="toggleExpand('${p.id}')">
         <div class="avatar">${initials(p.nome_paciente)}</div>
         <div class="cliente-info">
-          <div class="cliente-nome">${p.nome_paciente} <span class="tipo-badge">${p.tipo_atendimento||'Psicoterapia'}</span></div>
-          <div class="cliente-meta">${metaItems}</div>
+          <div class="cliente-nome" style="display:flex;align-items:center;gap:6px">
+            <span style="${isOculto('nome_'+p.id)?'filter:blur(5px);user-select:none':''}">
+              ${p.nome_paciente}
+            </span>
+            <span class="tipo-badge">${p.tipo_atendimento||'Psicoterapia'}</span>
+            <button onclick="event.stopPropagation();toggleOcultar('nome_'+p.id)" style="background:none;border:none;cursor:pointer;font-size:13px;opacity:0.5;padding:0" title="${isOculto('nome_'+p.id)?'Revelar nome':'Ocultar nome'}">${isOculto('nome_'+p.id)?'🙈':'👁️'}</button>
+          </div>
+          <div class="cliente-meta" style="display:flex;align-items:center;gap:6px">
+          <span style="${isOculto('valor_'+p.id)?'filter:blur(5px);user-select:none':''}">
+            ${metaItems}
+          </span>
+          <button onclick="event.stopPropagation();toggleOcultar('valor_'+p.id)" style="background:none;border:none;cursor:pointer;font-size:12px;opacity:0.5;padding:0" title="${isOculto('valor_'+p.id)?'Revelar valores':'Ocultar valores'}">${isOculto('valor_'+p.id)?'🙈':'👁️'}</button>
+        </div>
         </div>
         <div class="cliente-actions" onclick="event.stopPropagation()">
           <button class="btn-link-small" onclick="toggleEditarCliente('${p.id}')">✏️ Editar</button>
@@ -976,6 +992,15 @@ Qualquer dúvida, estamos à disposição! 💛`;
 }
 
 let modoPrivado = false;
+let ocultados = JSON.parse(localStorage.getItem('dc-ocultados') || '{}');
+
+function toggleOcultar(campo) {
+  ocultados[campo] = !ocultados[campo];
+  localStorage.setItem('dc-ocultados', JSON.stringify(ocultados));
+  renderLista();
+}
+
+function isOculto(campo) { return !!ocultados[campo]; }
 
 function togglePrivado() {
   modoPrivado = !modoPrivado;
