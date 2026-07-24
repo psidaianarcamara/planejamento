@@ -615,10 +615,10 @@ function renderResumo() {
     <div class="resumo-stat" style="position:relative">
       <div class="resumo-label">Recebido</div>
       <div class="resumo-value" style="font-size:14px">
-        <span id="resumo-recebido" class="${isOculto('resumo_recebido')?'campo-oculto':''}">${fmtBRL(totalRecebido)}</span>
-        <button class="btn-olhinho" onclick="toggleOcultar('resumo_recebido')" style="font-size:11px">${isOculto('resumo_recebido')?'🙈':'👁️'}</button>
+        <span data-campo="resumo_recebido" class="${isOculto('resumo_recebido')?'campo-oculto':''}">${fmtBRL(totalRecebido)}</span>
+        <button class="btn-olhinho" data-btn="resumo_recebido" onclick="toggleOcultar('resumo_recebido')" style="font-size:11px">${isOculto('resumo_recebido')?'🙈':'👁️'}</button>
       </div>
-      <div class="resumo-sub"><span class="${isOculto('resumo_recebido')?'campo-oculto':''}">${fmtBRL(totalValor)}</span></div>
+      <div class="resumo-sub"><span data-campo="resumo_recebido" class="${isOculto('resumo_recebido')?'campo-oculto':''}">${fmtBRL(totalValor)}</span></div>
     </div>
     <div class="resumo-stat"><div class="resumo-label" style="color:var(--blue)">Aguard. confirm.</div><div class="resumo-value" style="color:var(--blue)">${totalAguard}</div><div class="resumo-sub">cliente informou</div></div>
     <div class="resumo-stat"><div class="resumo-label" style="color:var(--red)">Recibo pendente</div><div class="resumo-value" style="color:var(--red)">${pendRec}</div><div class="resumo-sub">a emitir</div></div>
@@ -682,7 +682,7 @@ function renderLista() {
           <span class="encontro-data">${fmtData(iso)}</span>
           <div class="encontro-centro">
             <div style="display:flex;align-items:center;gap:6px">
-              <span class="${isOculto('valor_${p.id}')?'campo-oculto':''}">
+              <span data-campo="valor_${p.id}" class="${isOculto('valor_${p.id}')?'campo-oculto':''}">
                 <span class="encontro-valor" style="${valorCustom!==undefined?'text-decoration:line-through;opacity:0.5;font-size:11px':''}">${p.preco>0?fmtBRL(p.preco):''}</span>
                 ${valorCustom!==undefined?`<span style="font-size:13px;font-weight:700;color:var(--terra-dark)">${fmtBRL(valorCustom)}</span>`:''}
               </span>
@@ -690,13 +690,13 @@ function renderLista() {
             </div>
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px">
               <span class="status-enc ${stClass}" onclick="ciclarStatus('${p.id}','${iso}')" title="Clique para alterar status">${stLabel}</span>
-              <span class="${isOculto('forma_${p.id}')?'campo-oculto':''}">
+              <span data-campo="forma_${p.id}" class="${isOculto('forma_${p.id}')?'campo-oculto':''}">
                 <select class="forma-pag-select ${forma?'preenchido':''}" onchange="salvarForma('${p.id}','${iso}',this.value)">
                   <option value="">Forma pag.</option>
                   ${FORMAS_PAG.map(f=>`<option value="${f}" ${forma===f?'selected':''}>${f}</option>`).join('')}
                 </select>
               </span>
-              <button class="btn-olhinho" onclick="toggleOcultar('forma_${p.id}')" title="Ocultar/revelar forma de pagamento">${isOculto('forma_${p.id}')?'🙈':'👁️'}</button>
+              <button class="btn-olhinho" data-btn="forma_${p.id}" onclick="toggleOcultar('forma_${p.id}')" title="Ocultar/revelar forma de pagamento">${isOculto('forma_${p.id}')?'🙈':'👁️'}</button>
             </div>
           </div>
           <div class="status-group">
@@ -718,13 +718,13 @@ function renderLista() {
         <div class="avatar">${initials(p.nome_paciente)}</div>
         <div class="cliente-info">
           <div class="cliente-nome" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span id="campo-nome-${p.id}" class="${isOculto('nome_${p.id}')?'campo-oculto':''}">${p.nome_paciente}</span>
+            <span data-campo="nome_${p.id}" class="${isOculto('nome_${p.id}')?'campo-oculto':''}">${p.nome_paciente}</span>
             <span class="tipo-badge">${p.tipo_atendimento||'Psicoterapia'}</span>
-            <button class="btn-olhinho" onclick="event.stopPropagation();toggleOcultar('nome_${p.id}')" title="Ocultar/revelar nome">${isOculto('nome_${p.id}')?'🙈':'👁️'}</button>
+            <button class="btn-olhinho" data-btn="nome_${p.id}" onclick="event.stopPropagation();toggleOcultar('nome_${p.id}')" title="Ocultar/revelar nome">${isOculto('nome_${p.id}')?'🙈':'👁️'}</button>
           </div>
           <div class="cliente-meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span id="campo-meta-${p.id}" class="${isOculto('valor_${p.id}')?'campo-oculto':''}">${metaItems}</span>
-          <button class="btn-olhinho" onclick="event.stopPropagation();toggleOcultar('valor_${p.id}')" title="Ocultar/revelar valores">${isOculto('valor_${p.id}')?'🙈':'👁️'}</button>
+          <span data-campo="valor_${p.id}" class="${isOculto('valor_${p.id}')?'campo-oculto':''}">${metaItems}</span>
+          <button class="btn-olhinho" data-btn="valor_${p.id}" onclick="event.stopPropagation();toggleOcultar('valor_${p.id}')" title="Ocultar/revelar valores">${isOculto('valor_${p.id}')?'🙈':'👁️'}</button>
         </div>
         </div>
         <div class="cliente-actions" onclick="event.stopPropagation()">
@@ -1005,7 +1005,13 @@ let ocultados = JSON.parse(localStorage.getItem('dc-ocultados') || '{}');
 function toggleOcultar(campo) {
   ocultados[campo] = !ocultados[campo];
   localStorage.setItem('dc-ocultados', JSON.stringify(ocultados));
-  renderLista();
+  // Atualizar elementos sem re-renderizar
+  document.querySelectorAll('[data-campo="' + campo + '"]').forEach(el => {
+    el.classList.toggle('campo-oculto', !!ocultados[campo]);
+  });
+  document.querySelectorAll('[data-btn="' + campo + '"]').forEach(btn => {
+    btn.textContent = ocultados[campo] ? '🙈' : '👁️';
+  });
 }
 
 function isOculto(campo) { return !!ocultados[campo]; }
