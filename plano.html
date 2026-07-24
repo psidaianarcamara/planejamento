@@ -230,8 +230,9 @@ function render() {
   const pagsCliente = plano.pagamentos_cliente || {};
   const confirmados = sessoes.filter(iso => pags[iso]).length;
   const solicitados = sessoes.filter(iso => pagsCliente[iso] && !pags[iso]).length;
-  const valorTotal = sessoes.length * plano.preco;
-  const valorPago = confirmados * plano.preco;
+  const valoresCustom = plano.valores_customizados || {};
+  const valorTotal = sessoes.reduce((acc, iso) => acc + (valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco), 0);
+  const valorPago = sessoes.filter(iso => pags[iso]).reduce((acc, iso) => acc + (valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco), 0);
 
   let html = `
     <div class="welcome">
@@ -246,17 +247,19 @@ function render() {
 
   byMonth.forEach(m => {
     const confirmadosNoMes = m.isos.filter(iso => pags[iso]).length;
-    const totalMes = m.isos.length * plano.preco;
+    const totalMes = m.isos.reduce((acc, i) => { const vc = (plano.valores_customizados||{})[i]; return acc + (vc !== undefined ? vc : plano.preco); }, 0);
     const sessionsHtml = m.isos.map(iso => {
       const confirmado = !!pags[iso];
       const solicitado = !!pagsCliente[iso] && !confirmado;
       const stEnc = (plano.status_encontros || {})[iso] || '';
+      const valorCustom = (plano.valores_customizados || {})[iso];
+      const valorEncontro = valorCustom !== undefined ? valorCustom : plano.preco;
       const rowClass = confirmado ? 'confirmado' : solicitado ? 'solicitado' : '';
       return `<div class="session-row ${rowClass}">
         <div class="session-left">
           <div class="session-dot"></div>
           <span class="session-date">${fmtISO(iso)}</span>
-          ${plano.preco > 0 ? '<span class="session-price">'+fmtBRL(plano.preco)+'</span>' : ''}
+          ${valorEncontro > 0 ? '<span class="session-price">'+fmtBRL(valorEncontro)+'</span>' : ''}
         </div>
         <div class="session-right">
           ${stEnc ? `<span class="status-enc-cliente ${stEnc}">${STATUS_LABEL_CLI[stEnc]}</span>` : ''}
