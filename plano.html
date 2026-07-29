@@ -147,6 +147,15 @@ function api(method, path, body) {
   }).then(r => r.ok ? r.json() : r.json().then(e => { throw e; }));
 }
 
+function copiarPix() {
+  navigator.clipboard.writeText('37936907000177').then(() => {
+    const btn = document.getElementById('btn-pix');
+    btn.textContent = 'Copiado ✓';
+    btn.style.background = '#2A8A55';
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.style.background = 'var(--terra)'; }, 2500);
+  });
+}
+
 async function carregarCabecalho() {
   try {
     const r = await fetch(SUPABASE_URL + '/rest/v1/planejamentos?token=eq.CABECALHO_V2&select=tipo_atendimento', {
@@ -238,6 +247,15 @@ function render() {
     <div class="welcome">
       <div class="welcome-name">Olá, ${plano.nome_paciente}!</div>
       <div class="welcome-sub">Aqui está o seu planejamento financeiro. Informe quando realizar o pagamento de cada encontro.</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px">
+      <div style="font-size:24px">💚</div>
+      <div style="flex:1">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Chave PIX</div>
+        <div style="font-size:14px;font-weight:600;color:var(--terra-deep)" id="pix-key">37.936.907/0001-77</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:1px">CNPJ · Consultório Daiana Câmara</div>
+      </div>
+      <button onclick="copiarPix()" id="btn-pix" style="background:var(--terra);color:var(--white);border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;">Copiar</button>
     </div>
     <div class="summary">
       <div class="stat"><div class="stat-label">Encontros</div><div class="stat-value">${sessoes.length}</div><div class="stat-sub">${confirmados} confirmado${confirmados!==1?'s':''}</div></div>
