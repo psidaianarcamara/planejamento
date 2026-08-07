@@ -236,6 +236,7 @@
     <div class="tab" onclick="showTab('novo')">+ Novo planejamento</div>
     <div class="tab" onclick="showTab('servicos')">⚙️ Serviços</div>
     <div class="tab" onclick="showTab('cabecalho')">✏️ Cabeçalho</div>
+    <div class="tab" onclick="showTab('previsao')">📅 Previsão</div>
   </div>
 </div>
 
@@ -294,6 +295,14 @@
           <button class="btn-copy" onclick="copiarLink()">Copiar</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- PREVISÃO -->
+  <div id="tab-previsao" style="display:none">
+    <div class="card">
+      <div class="card-title">Previsão de recebimentos</div>
+      <div id="previsao-content"><div class="empty">Carregando...</div></div>
     </div>
   </div>
 
@@ -517,9 +526,10 @@ function toast(msg, type='') {
 }
 
 function showTab(tab) {
-  ['painel','novo','servicos','cabecalho'].forEach(t => document.getElementById('tab-'+t).style.display = t===tab?'':'none');
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===['painel','novo','servicos','cabecalho'].indexOf(tab)));
+  ['painel','novo','servicos','cabecalho','previsao'].forEach(t => document.getElementById('tab-'+t).style.display = t===tab?'':'none');
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===['painel','novo','servicos','cabecalho','previsao'].indexOf(tab)));
   if(tab==='cabecalho') carregarCabecalho();
+  if(tab==='previsao') renderPrevisao();
   if (tab === 'painel') carregarDados();
 }
 
@@ -1045,6 +1055,81 @@ function togglePrivado() {
     const ov = document.getElementById('privado-overlay');
     if (ov) ov.remove();
   }
+}
+
+function renderPrevisao() {
+  const hoje = new Date();
+  const mesAtual = hoje.getFullYear() * 100 + hoje.getMonth();
+  const MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const mapa = {};
+
+  dados.forEach(p => {
+    const sess = p.sessoes || [];
+    const pags = p.pagamentos || {};
+    const valoresC = p.valores_customizados || {};
+    sess.forEach(iso => {
+      const [y, m] = iso.split('-').map(Number);
+      const mesKey = y * 100 + (m - 1);
+      if (mesKey < mesAtual) return;
+      if (!mapa[mesKey]) mapa[mesKey] = { year: y, month: m-1, encontros: [], total: 0, recebido: 0, pendente: 0 };
+      const valor = valoresC[iso] !== undefined ? valoresC[iso] : (p.preco || 0);
+      const pago = !!pags[iso];
+      mapa[mesKey].encontros.push({ nome: p.nome_paciente, iso, valor, pago });
+      mapa[mesKey].total += valor;
+      if (pago) mapa[mesKey].recebido += valor;
+      else mapa[mesKey].pendente += valor;
+    });
+  });
+
+  const meses = Object.values(mapa).sort((a, b) => (a.year*100+a.month)-(b.year*100+b.month));
+
+  if (meses.length === 0) {
+    document.getElementById('previsao-content').innerHTML = '<div class="empty">Nenhum encontro futuro cadastrado.</div>';
+    return;
+  }
+
+  const totalGeral = meses.reduce((a,m) => a+m.total, 0);
+  const totalRecebido = meses.reduce((a,m) => a+m.recebido, 0);
+  const totalPendente = meses.reduce((a,m) => a+m.pendente, 0);
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">
+    <div class="resumo-stat"><div class="resumo-label">Total previsto</div><div class="resumo-value" style="font-size:15px">${fmtBRL(totalGeral)}</div></div>
+    <div class="resumo-stat"><div class="resumo-label" style="color:var(--green)">Já recebido</div><div class="resumo-value" style="font-size:15px;color:var(--green)">${fmtBRL(totalRecebido)}</div></div>
+    <div class="resumo-stat"><div class="resumo-label" style="color:var(--yellow)">A receber</div><div class="resumo-value" style="font-size:15px;color:var(--yellow)">${fmtBRL(totalPendente)}</div></div>
+  </div>`;
+
+  meses.forEach(m => {
+    const progresso = m.total > 0 ? Math.round((m.recebido/m.total)*100) : 0;
+    const encontrosHtml = m.encontros.map(e => {
+      const [y,mo,d] = e.iso.split('-');
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-weight:600;color:var(--text-muted);min-width:36px">${d}/${mo}</span>
+          <span style="font-size:13px;color:var(--text)">${e.nome}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:${e.pago?'var(--green)':'var(--text)'}">${fmtBRL(e.valor)}</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:99px;background:${e.pago?'var(--green-light)':'var(--yellow-light)'};color:${e.pago?'var(--green)':'var(--yellow)'};border:1px solid ${e.pago?'var(--green-border)':'var(--yellow-border)'}">${e.pago?'✓ Pago':'Pendente'}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    html += `<div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:15px;font-weight:700;color:var(--terra-deep)">${MONTHS_FULL[m.month]} ${m.year}</div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:700;color:var(--terra-deep)">${fmtBRL(m.total)}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${fmtBRL(m.recebido)} recebido · ${fmtBRL(m.pendente)} pendente</div>
+        </div>
+      </div>
+      <div style="height:5px;background:var(--border);border-radius:99px;margin-bottom:10px;overflow:hidden">
+        <div style="height:100%;width:${progresso}%;background:var(--green);border-radius:99px"></div>
+      </div>
+      ${encontrosHtml}
+    </div>`;
+  });
+
+  document.getElementById('previsao-content').innerHTML = html;
 }
 
 function sair() {
