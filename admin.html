@@ -1116,9 +1116,25 @@ function renderPrevisao() {
   const totalPendente = meses.reduce((a,m) => a+m.pendente, 0);
 
   let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
-    <div class="resumo-stat"><div class="resumo-label">Total previsto</div><div class="resumo-value" style="font-size:15px">${fmtBRL(totalGeral)}</div></div>
-    <div class="resumo-stat"><div class="resumo-label" style="color:var(--green)">Já recebido</div><div class="resumo-value" style="font-size:15px;color:var(--green)">${fmtBRL(totalRecebido)}</div></div>
-    <div class="resumo-stat"><div class="resumo-label" style="color:var(--yellow)">A receber</div><div class="resumo-value" style="font-size:15px;color:var(--yellow)">${fmtBRL(totalPendente)}</div></div>
+    <div class="resumo-stat">
+      <div class="resumo-label">Total previsto</div>
+      <div class="resumo-value" style="font-size:15px;display:flex;align-items:center;justify-content:center;gap:4px">
+        <span data-prev-valor="cabecalho" class="${prevPrivado['cabecalho']?'campo-oculto':''}">${fmtBRL(totalGeral)}</span>
+        <button class="btn-olhinho" id="prev-olho-cabecalho" onclick="togglePrevPrivado('cabecalho')" style="font-size:11px">${prevPrivado['cabecalho']?'🙈':'👁️'}</button>
+      </div>
+    </div>
+    <div class="resumo-stat">
+      <div class="resumo-label" style="color:var(--green)">Já recebido</div>
+      <div class="resumo-value" style="font-size:15px;color:var(--green)">
+        <span data-prev-valor="cabecalho" class="${prevPrivado['cabecalho']?'campo-oculto':''}">${fmtBRL(totalRecebido)}</span>
+      </div>
+    </div>
+    <div class="resumo-stat">
+      <div class="resumo-label" style="color:var(--yellow)">A receber</div>
+      <div class="resumo-value" style="font-size:15px;color:var(--yellow)">
+        <span data-prev-valor="cabecalho" class="${prevPrivado['cabecalho']?'campo-oculto':''}">${fmtBRL(totalPendente)}</span>
+      </div>
+    </div>
   </div>`;
 
   meses.forEach(m => {
