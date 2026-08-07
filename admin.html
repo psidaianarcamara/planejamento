@@ -1057,6 +1057,28 @@ function togglePrivado() {
   }
 }
 
+let prevExpanded = {};
+let prevPrivado = {};
+
+function togglePrevMes(key) {
+  prevExpanded[key] = !prevExpanded[key];
+  const body = document.getElementById('prev-body-' + key);
+  const chevron = document.getElementById('prev-chevron-' + key);
+  if (body) body.style.display = prevExpanded[key] ? 'block' : 'none';
+  if (chevron) chevron.textContent = prevExpanded[key] ? '▲' : '▼';
+}
+
+function togglePrevPrivado(key) {
+  prevPrivado[key] = !prevPrivado[key];
+  const valores = document.querySelectorAll('[data-prev-valor="' + key + '"]');
+  const nomes = document.querySelectorAll('[data-prev-nome="' + key + '"]');
+  const btn = document.getElementById('prev-olho-' + key);
+  const oculto = prevPrivado[key];
+  valores.forEach(el => el.classList.toggle('campo-oculto', oculto));
+  nomes.forEach(el => el.classList.toggle('campo-oculto', oculto));
+  if (btn) btn.textContent = oculto ? '🙈' : '👁️';
+}
+
 function renderPrevisao() {
   const hoje = new Date();
   const mesAtual = hoje.getFullYear() * 100 + hoje.getMonth();
@@ -1068,20 +1090,21 @@ function renderPrevisao() {
     const pags = p.pagamentos || {};
     const valoresC = p.valores_customizados || {};
     sess.forEach(iso => {
-      const [y, m] = iso.split('-').map(Number);
+      const parts = iso.split('-').map(Number);
+      const y = parts[0], m = parts[1];
       const mesKey = y * 100 + (m - 1);
       if (mesKey < mesAtual) return;
-      if (!mapa[mesKey]) mapa[mesKey] = { year: y, month: m-1, encontros: [], total: 0, recebido: 0, pendente: 0 };
+      const key = y + '_' + (m-1);
+      if (!mapa[key]) mapa[key] = { key, year: y, month: m-1, encontros: [], total: 0, recebido: 0, pendente: 0 };
       const valor = valoresC[iso] !== undefined ? valoresC[iso] : (p.preco || 0);
       const pago = !!pags[iso];
-      mapa[mesKey].encontros.push({ nome: p.nome_paciente, iso, valor, pago });
-      mapa[mesKey].total += valor;
-      if (pago) mapa[mesKey].recebido += valor;
-      else mapa[mesKey].pendente += valor;
+      mapa[key].encontros.push({ nome: p.nome_paciente, iso, valor, pago });
+      mapa[key].total += valor;
+      if (pago) mapa[key].recebido += valor; else mapa[key].pendente += valor;
     });
   });
 
-  const meses = Object.values(mapa).sort((a, b) => (a.year*100+a.month)-(b.year*100+b.month));
+  const meses = Object.values(mapa).sort((a,b) => (a.year*100+a.month)-(b.year*100+b.month));
 
   if (meses.length === 0) {
     document.getElementById('previsao-content').innerHTML = '<div class="empty">Nenhum encontro futuro cadastrado.</div>';
@@ -1092,40 +1115,54 @@ function renderPrevisao() {
   const totalRecebido = meses.reduce((a,m) => a+m.recebido, 0);
   const totalPendente = meses.reduce((a,m) => a+m.pendente, 0);
 
-  let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">
+  let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
     <div class="resumo-stat"><div class="resumo-label">Total previsto</div><div class="resumo-value" style="font-size:15px">${fmtBRL(totalGeral)}</div></div>
     <div class="resumo-stat"><div class="resumo-label" style="color:var(--green)">Já recebido</div><div class="resumo-value" style="font-size:15px;color:var(--green)">${fmtBRL(totalRecebido)}</div></div>
     <div class="resumo-stat"><div class="resumo-label" style="color:var(--yellow)">A receber</div><div class="resumo-value" style="font-size:15px;color:var(--yellow)">${fmtBRL(totalPendente)}</div></div>
   </div>`;
 
   meses.forEach(m => {
+    const key = m.key;
+    const expanded = !!prevExpanded[key];
+    const privado = !!prevPrivado[key];
     const progresso = m.total > 0 ? Math.round((m.recebido/m.total)*100) : 0;
+
     const encontrosHtml = m.encontros.map(e => {
-      const [y,mo,d] = e.iso.split('-');
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+      const parts = e.iso.split('-');
+      const d = parts[2], mo = parts[1];
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:11px;font-weight:600;color:var(--text-muted);min-width:36px">${d}/${mo}</span>
-          <span style="font-size:13px;color:var(--text)">${e.nome}</span>
+          <span data-prev-nome="${key}" class="campo-oculto-wrap ${privado?'campo-oculto':''}" style="font-size:13px;color:var(--text)">${e.nome}</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:13px;font-weight:600;color:${e.pago?'var(--green)':'var(--text)'}">${fmtBRL(e.valor)}</span>
+          <span data-prev-valor="${key}" class="${privado?'campo-oculto':''}" style="font-size:13px;font-weight:600;color:${e.pago?'var(--green)':'var(--text)'}">${fmtBRL(e.valor)}</span>
           <span style="font-size:11px;padding:2px 8px;border-radius:99px;background:${e.pago?'var(--green-light)':'var(--yellow-light)'};color:${e.pago?'var(--green)':'var(--yellow)'};border:1px solid ${e.pago?'var(--green-border)':'var(--yellow-border)'}">${e.pago?'✓ Pago':'Pendente'}</span>
         </div>
       </div>`;
     }).join('');
 
-    html += `<div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:15px;font-weight:700;color:var(--terra-deep)">${MONTHS_FULL[m.month]} ${m.year}</div>
+    html += `<div style="background:var(--white);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--terra-light);border-bottom:${expanded?'1px solid var(--terra-mid)':'none'};cursor:pointer" onclick="togglePrevMes('${key}')">
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;color:var(--terra-deep)">${MONTHS_FULL[m.month]} ${m.year}</div>
+          <div style="font-size:12px;color:var(--terra-dark);margin-top:2px">${m.encontros.length} encontro${m.encontros.length!==1?'s':''} · ${progresso}% recebido</div>
+        </div>
         <div style="text-align:right">
-          <div style="font-size:16px;font-weight:700;color:var(--terra-deep)">${fmtBRL(m.total)}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${fmtBRL(m.recebido)} recebido · ${fmtBRL(m.pendente)} pendente</div>
+          <div data-prev-valor="${key}" class="${privado?'campo-oculto':''}" style="font-size:16px;font-weight:700;color:var(--terra-deep)">${fmtBRL(m.total)}</div>
+          <div data-prev-valor="${key}" class="${privado?'campo-oculto':''}" style="font-size:11px;color:var(--text-muted)">${fmtBRL(m.recebido)} rec. · ${fmtBRL(m.pendente)} pend.</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center" onclick="event.stopPropagation()">
+          <button id="prev-olho-${key}" class="btn-olhinho" onclick="togglePrevPrivado('${key}')" title="Ocultar/revelar valores">${privado?'🙈':'👁️'}</button>
+          <span id="prev-chevron-${key}" style="color:var(--terra);font-size:12px">${expanded?'▲':'▼'}</span>
         </div>
       </div>
-      <div style="height:5px;background:var(--border);border-radius:99px;margin-bottom:10px;overflow:hidden">
-        <div style="height:100%;width:${progresso}%;background:var(--green);border-radius:99px"></div>
+      <div id="prev-body-${key}" style="display:${expanded?'block':'none'}">
+        <div style="height:4px;background:var(--border);overflow:hidden">
+          <div style="height:100%;width:${progresso}%;background:var(--green)"></div>
+        </div>
+        <div style="padding:4px 16px 8px">${encontrosHtml}</div>
       </div>
-      ${encontrosHtml}
     </div>`;
   });
 
