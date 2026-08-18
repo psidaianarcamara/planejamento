@@ -1118,13 +1118,16 @@ function renderPrevisao() {
       if (!mapa[key]) mapa[key] = { key, year: y, month: m-1, encontros: [], total: 0, recebido: 0, pendente: 0 };
       const valor = valoresC[iso] !== undefined ? valoresC[iso] : (p.preco || 0);
       const pago = !!pags[iso];
+      const statusEnc = (p.status_encontros || {})[iso] || '';
+      // Excluir da previsão: valor zero, cancelado ou falta
+      if (valor === 0 || statusEnc === 'cancelado' || statusEnc === 'falta') return;
       mapa[key].encontros.push({ nome: p.nome_paciente, iso, valor, pago });
       mapa[key].total += valor;
       if (pago) mapa[key].recebido += valor; else mapa[key].pendente += valor;
     });
   });
 
-  const meses = Object.values(mapa).sort((a,b) => (a.year*100+a.month)-(b.year*100+b.month));
+  const meses = Object.values(mapa).filter(m => m.encontros.length > 0).sort((a,b) => (a.year*100+a.month)-(b.year*100+b.month));
 
   if (meses.length === 0) {
     document.getElementById('previsao-content').innerHTML = '<div class="empty">Nenhum encontro futuro cadastrado.</div>';
