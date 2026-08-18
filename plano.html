@@ -265,7 +265,13 @@ function render() {
 
   byMonth.forEach(m => {
     const confirmadosNoMes = m.isos.filter(iso => pags[iso]).length;
-    const totalMes = m.isos.reduce((acc, i) => { const vc = (plano.valores_customizados||{})[i]; return acc + (vc !== undefined ? vc : plano.preco); }, 0);
+    const totalMes = m.isos.reduce((acc, i) => {
+      const st = (plano.status_encontros||{})[i] || '';
+      if (st === 'cancelado' || st === 'falta') return acc;
+      const vc = (plano.valores_customizados||{})[i];
+      const v = vc !== undefined ? vc : plano.preco;
+      return acc + v;
+    }, 0);
     const sessionsHtml = m.isos.map(iso => {
       const confirmado = !!pags[iso];
       const solicitado = !!pagsCliente[iso] && !confirmado;
@@ -301,7 +307,7 @@ function render() {
     html += `<div class="month-card">
       <div class="month-header">
         <div class="month-title">${MONTHS[m.month]} ${m.year}</div>
-        <div class="month-summary">${m.isos.length} encontro${m.isos.length!==1?'s':''} · ${confirmadosNoMes} confirmado${confirmadosNoMes!==1?'s':''}</div>
+        <div class="month-summary">${m.isos.filter(i=>{const st=(plano.status_encontros||{})[i]||'';return st!=='cancelado'&&st!=='falta';}).length} encontro${m.isos.length!==1?'s':''} · ${confirmadosNoMes} confirmado${confirmadosNoMes!==1?'s':''}</div>
       </div>
       <div class="sessions-list">${sessionsHtml}</div>
       ${plano.preco > 0 ? '<div class="month-footer"><span class="month-count">Total do mês</span><span class="month-total">'+fmtBRL(totalMes)+'</span></div>' : ''}
