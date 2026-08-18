@@ -234,8 +234,14 @@ function render() {
   const confirmados = sessoes.filter(iso => pags[iso]).length;
   const solicitados = sessoes.filter(iso => pagsCliente[iso] && !pags[iso]).length;
   const valoresCustom = plano.valores_customizados || {};
-  const valorTotal = sessoes.reduce((acc, iso) => acc + (valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco), 0);
-  const valorPago = sessoes.filter(iso => pags[iso]).reduce((acc, iso) => acc + (valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco), 0);
+  const statusEncs = plano.status_encontros || {};
+  const sessoesValidas = sessoes.filter(iso => {
+    const st = statusEncs[iso] || '';
+    const v = valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco;
+    return st !== 'cancelado' && st !== 'falta' && v > 0;
+  });
+  const valorTotal = sessoesValidas.reduce((acc, iso) => acc + (valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco), 0);
+  const valorPago = sessoesValidas.filter(iso => pags[iso]).reduce((acc, iso) => acc + (valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco), 0);
 
   let html = `
     <div class="welcome">
@@ -267,8 +273,7 @@ function render() {
       const novaData = (plano.datas_reagendadas || {})[iso] || '';
       const valorCustom = (plano.valores_customizados || {})[iso];
       const valorEncontro = valorCustom !== undefined ? valorCustom : plano.preco;
-      // Ocultar do cliente: cancelado, falta ou valor zero
-      if (stEnc === 'cancelado' || stEnc === 'falta' || valorEncontro === 0) return '';
+
       const rowClass = confirmado ? 'confirmado' : solicitado ? 'solicitado' : '';
       return `<div class="session-row ${rowClass}">
         <div class="session-left">
@@ -279,6 +284,7 @@ function render() {
         <div class="session-right">
           ${stEnc ? `<span class="status-enc-cliente ${stEnc}">${STATUS_LABEL_CLI[stEnc]}</span>` : ''}
           ${stEnc === 'remarcado' && novaData ? `<span style="font-size:11px;font-weight:600;color:var(--terra-dark);background:var(--terra-light);border:1px solid var(--terra-mid);border-radius:99px;padding:2px 8px">📅 ${novaData.split('-').slice(1).reverse().join('/')}</span>` : ''}
+          ${stEnc !== 'cancelado' && stEnc !== 'falta' && valorEncontro > 0 ? `
           <label class="pay-label-wrap ${confirmado?'disabled':''}">
             <input type="checkbox" class="pay-check"
               ${confirmado||solicitado?'checked':''}
@@ -287,6 +293,7 @@ function render() {
             <span class="pay-text">${confirmado ? 'Confirmado ✓' : solicitado ? 'Informado ✓' : 'Informar pagamento'}</span>
           </label>
           ${solicitado ? '<span class="aguardando-text">Aguardando confirmação...</span>' : ''}
+          ` : ''}
         </div>
       </div>`;
     }).join('');
