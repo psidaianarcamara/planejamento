@@ -267,6 +267,8 @@ function render() {
       const novaData = (plano.datas_reagendadas || {})[iso] || '';
       const valorCustom = (plano.valores_customizados || {})[iso];
       const valorEncontro = valorCustom !== undefined ? valorCustom : plano.preco;
+      // Ocultar do cliente: cancelado, falta ou valor zero
+      if (stEnc === 'cancelado' || stEnc === 'falta' || valorEncontro === 0) return '';
       const rowClass = confirmado ? 'confirmado' : solicitado ? 'solicitado' : '';
       return `<div class="session-row ${rowClass}">
         <div class="session-left">
