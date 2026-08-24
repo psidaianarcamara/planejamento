@@ -678,11 +678,8 @@ function renderLista() {
       faltas>0?`<span style="color:var(--gray);font-weight:700">❌ ${faltas} falta${faltas!==1?'s':''}</span>`:'',
     ].filter(Boolean).join(' · ');
 
-    // ISOs que são destino de remarcação — não devem aparecer como encontro independente
-    const isosRemarcadosDestino = new Set(Object.values(p.datas_reagendadas||{}));
-
     const encontrosHtml=byMonth.map(m=>{
-      const sessHtml=m.isos.filter(iso=>!isosRemarcadosDestino.has(iso)||status[iso]==='remarcado').map(iso=>{
+      const sessHtml=m.isos.map(iso=>{
         const pago=!!pags[iso], recibo=!!recs[iso];
         const clienteInformou=!!pagsC[iso]&&!pago;
         const stEnc=status[iso]||'';
@@ -725,9 +722,8 @@ function renderLista() {
           </div>
         </div>`;
       }).join('');
-      if (!sessHtml) return '';
       return `<div class="mes-title">${MONTHS[m.month]} ${m.year}</div>${sessHtml}`;
-    }).filter(Boolean).join('');
+    }).join('');
 
     return `<div class="cliente-card">
       <div class="cliente-header" onclick="toggleExpand('${p.id}')">
@@ -1113,7 +1109,6 @@ function renderPrevisao() {
     const sess = p.sessoes || [];
     const pags = p.pagamentos || {};
     const valoresC = p.valores_customizados || {};
-    const destRemarcados = new Set(Object.values(p.datas_reagendadas || {}));
     sess.forEach(iso => {
       const parts = iso.split('-').map(Number);
       const y = parts[0], m = parts[1];
@@ -1124,9 +1119,8 @@ function renderPrevisao() {
       const valor = valoresC[iso] !== undefined ? valoresC[iso] : (p.preco || 0);
       const pago = !!pags[iso];
       const statusEnc = (p.status_encontros || {})[iso] || '';
-      // Excluir: valor zero, cancelado, falta ou destino de remarcação
+      // Excluir da previsão: valor zero, cancelado ou falta
       if (valor === 0 || statusEnc === 'cancelado' || statusEnc === 'falta') return;
-      if (destRemarcados.has(iso) && statusEnc !== 'remarcado') return;
       mapa[key].encontros.push({ nome: p.nome_paciente, iso, valor, pago });
       mapa[key].total += valor;
       if (pago) mapa[key].recebido += valor; else mapa[key].pendente += valor;
