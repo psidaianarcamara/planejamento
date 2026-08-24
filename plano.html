@@ -259,7 +259,7 @@ function render() {
     </div>
     <div class="summary">
       <div class="stat"><div class="stat-label">Encontros</div><div class="stat-value">${sessoes.length}</div><div class="stat-sub">${confirmados} confirmado${confirmados!==1?'s':''}</div></div>
-      <div class="stat"><div class="stat-label">Confirmado</div><div class="stat-value" style="font-size:15px">${fmtBRL(valorPago)}</div></div>
+      <div class="stat"><div class="stat-label">Pagamento confirmado</div><div class="stat-value" style="font-size:15px">${fmtBRL(valorPago)}</div></div>
       <div class="stat"><div class="stat-label">A pagar</div><div class="stat-value" style="font-size:15px">${fmtBRL(valorTotal-valorPago)}</div></div>
     </div>`;
 
@@ -288,17 +288,16 @@ function render() {
           ${valorEncontro > 0 ? '<span class="session-price">'+fmtBRL(valorEncontro)+'</span>' : ''}
         </div>
         <div class="session-right">
-          ${stEnc ? `<span class="status-enc-cliente ${stEnc}">${STATUS_LABEL_CLI[stEnc]}</span>` : ''}
-          ${stEnc === 'remarcado' && novaData ? `<span style="font-size:11px;font-weight:600;color:var(--terra-dark);background:var(--terra-light);border:1px solid var(--terra-mid);border-radius:99px;padding:2px 8px">📅 ${novaData.split('-').slice(1).reverse().join('/')}</span>` : ''}
+          ${stEnc ? `<span class="status-enc-cliente ${stEnc}">${STATUS_LABEL_CLI[stEnc]}${stEnc === 'remarcado' && novaData ? ' → ' + novaData.split('-').slice(1).reverse().join('/') : ''}</span>` : ''}
           ${stEnc !== 'cancelado' && stEnc !== 'falta' && stEnc !== 'remarcado' && valorEncontro > 0 ? `
           <label class="pay-label-wrap ${confirmado?'disabled':''}">
             <input type="checkbox" class="pay-check"
               ${confirmado||solicitado?'checked':''}
               ${confirmado?'disabled':''}
               onchange="togglePagCliente('${iso}')">
-            <span class="pay-text">${confirmado ? 'Confirmado ✓' : solicitado ? 'Informado ✓' : 'Informar pagamento'}</span>
+            <span class="pay-text">${confirmado ? 'Pagamento confirmado ✓' : solicitado ? 'Pagamento informado ✓' : 'Informar pagamento'}</span>
           </label>
-          ${solicitado ? '<span class="aguardando-text">Aguardando confirmação...</span>' : ''}
+          ${solicitado && !confirmado ? '<span class="aguardando-text">Aguardando confirmação...</span>' : ''}
           ` : ''}
         </div>
       </div>`;
@@ -322,3 +321,4 @@ carregar();
 </script>
 </body>
 </html>
+
