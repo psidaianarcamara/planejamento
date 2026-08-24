@@ -70,6 +70,9 @@
   .status-enc-cliente.falta { background: #f8f9fa; color: #6c757d; border-color: #dee2e6; }
   .session-row.confirmado .pay-text { color: var(--green); font-weight: 700; }
   .session-row.solicitado .pay-text { color: var(--yellow); font-weight: 600; }
+  .session-row.pag-pendente { background: #fff8f0; border-color: #f5c6a0; }
+  .session-row.pag-pendente .session-dot { background: #e07b39; }
+  .session-row.pag-pendente .pay-text { color: #c0530a; font-weight: 700; }
   .aguardando-text { font-size: 11px; color: var(--yellow); font-weight: 500; }
 
   .month-footer { display: flex; justify-content: space-between; padding: 8px 14px 12px; }
@@ -280,7 +283,8 @@ function render() {
       const valorCustom = (plano.valores_customizados || {})[iso];
       const valorEncontro = valorCustom !== undefined ? valorCustom : plano.preco;
 
-      const rowClass = confirmado ? 'confirmado' : solicitado ? 'solicitado' : '';
+      const pagPendente = stEnc === 'realizado' && !confirmado && !solicitado && valorEncontro > 0;
+      const rowClass = confirmado ? 'confirmado' : solicitado ? 'solicitado' : pagPendente ? 'pag-pendente' : '';
       return `<div class="session-row ${rowClass}">
         <div class="session-left">
           <div class="session-dot"></div>
@@ -295,7 +299,7 @@ function render() {
               ${confirmado||solicitado?'checked':''}
               ${confirmado?'disabled':''}
               onchange="togglePagCliente('${iso}')">
-            <span class="pay-text">${confirmado ? 'Pagamento confirmado ✓' : solicitado ? 'Pagamento informado ✓' : 'Informar pagamento'}</span>
+            <span class="pay-text">${confirmado ? 'Pagamento confirmado ✓' : solicitado ? 'Pagamento informado ✓' : pagPendente ? '⚠ Pagamento pendente' : 'Informar pagamento'}</span>
           </label>
           ${solicitado && !confirmado ? '<span class="aguardando-text">Aguardando confirmação...</span>' : ''}
           ` : ''}
