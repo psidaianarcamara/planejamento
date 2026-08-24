@@ -290,7 +290,7 @@ function render() {
         <div class="session-right">
           ${stEnc ? `<span class="status-enc-cliente ${stEnc}">${STATUS_LABEL_CLI[stEnc]}</span>` : ''}
           ${stEnc === 'remarcado' && novaData ? `<span style="font-size:11px;font-weight:600;color:var(--terra-dark);background:var(--terra-light);border:1px solid var(--terra-mid);border-radius:99px;padding:2px 8px">📅 ${novaData.split('-').slice(1).reverse().join('/')}</span>` : ''}
-          ${stEnc !== 'cancelado' && stEnc !== 'falta' && valorEncontro > 0 ? `
+          ${stEnc !== 'cancelado' && stEnc !== 'falta' && stEnc !== 'remarcado' && valorEncontro > 0 ? `
           <label class="pay-label-wrap ${confirmado?'disabled':''}">
             <input type="checkbox" class="pay-check"
               ${confirmado||solicitado?'checked':''}
