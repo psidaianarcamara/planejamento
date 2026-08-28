@@ -649,8 +649,14 @@ function groupByMonth(dates) {
 function renderLista() {
   let filtrados=dados;
   if(filtroAtivo==='aguardando') filtrados=dados.filter(p=>(p.sessoes||[]).some(iso=>(p.pagamentos_cliente||{})[iso]&&!(p.pagamentos||{})[iso]));
-  else if(filtroAtivo==='pagamento-pendente') filtrados=dados.filter(p=>(p.sessoes||[]).some(iso=>!(p.pagamentos||{})[iso]));
-  else if(filtroAtivo==='recibo-pendente') filtrados=dados.filter(p=>(p.sessoes||[]).some(iso=>(p.pagamentos||{})[iso]&&!(p.recibos||{})[iso]));
+  else if(filtroAtivo==='pagamento-pendente') filtrados=dados.filter(p=>{
+    const sv=(p.sessoes||[]).filter(iso=>(p.status_encontros||{})[iso]!=='remarcado'&&((p.valores_custom||{})[iso]!==0)&&!((p.valores_custom||{})[iso]===undefined&&p.preco===0));
+    return sv.some(iso=>!(p.pagamentos||{})[iso]);
+  });
+  else if(filtroAtivo==='recibo-pendente') filtrados=dados.filter(p=>{
+    const sv=(p.sessoes||[]).filter(iso=>(p.status_encontros||{})[iso]!=='remarcado'&&((p.valores_custom||{})[iso]!==0)&&!((p.valores_custom||{})[iso]===undefined&&p.preco===0));
+    return sv.some(iso=>(p.pagamentos||{})[iso]&&!(p.recibos||{})[iso]);
+  });
   else if(filtroAtivo==='falta') filtrados=dados.filter(p=>(p.sessoes||[]).some(iso=>(p.status_encontros||{})[iso]==='falta'));
 
   if(!filtrados.length){
