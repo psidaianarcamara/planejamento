@@ -661,9 +661,10 @@ function renderLista() {
   document.getElementById('lista-clientes').innerHTML=filtrados.map(p=>{
     const sess=p.sessoes||[], pags=p.pagamentos||{}, recs=p.recibos||{},
           pagsC=p.pagamentos_cliente||{}, status=p.status_encontros||{}, formas=p.forma_pagamento||{};
-    const pagos=sess.filter(iso=>pags[iso]).length;
+    const sessValidas=sess.filter(iso=>status[iso]!=="remarcado"&&((p.valores_custom||{})[iso]!==0)&&!((p.valores_custom||{})[iso]===undefined&&p.preco===0));
+    const pagos=sessValidas.filter(iso=>pags[iso]).length;
     const aguard=sess.filter(iso=>pagsC[iso]&&!pags[iso]).length;
-    const pendRec=pagos-(sess.filter(iso=>recs[iso]).length);
+    const pendRec=pagos-(sessValidas.filter(iso=>recs[iso]).length);
     const faltas=sess.filter(iso=>status[iso]==='falta').length;
     const isOpen=!!expandidos[p.id];
     const byMonth=groupByMonth(sess);
@@ -1268,4 +1269,5 @@ function carregarCabecalho() {
 </script>
 </body>
 </html>
+
 
