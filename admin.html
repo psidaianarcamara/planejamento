@@ -115,6 +115,11 @@
   .filtro-btn { padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--white); color: var(--text-muted); transition: all 0.15s; }
   .filtro-btn:hover { border-color: var(--terra); color: var(--terra); }
   .filtro-btn.active { background: var(--terra); color: var(--white); border-color: var(--terra); }
+  .cliente-card.inativo { opacity: 0.55; filter: grayscale(0.4); }
+  .cliente-card.inativo .cliente-avatar { background: var(--text-muted); }
+  .btn-inativo { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 99px; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .btn-inativo:hover { border-color: #c0392b; color: #c0392b; }
+  .btn-inativo.marcado { background: #fdecea; color: #c0392b; border-color: #c0392b; }
 
   /* CLIENTE CARD */
   .cliente-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 12px; overflow: hidden; box-shadow: var(--shadow); }
@@ -255,6 +260,7 @@
       <button class="filtro-btn" onclick="setFiltro('pagamento-pendente',this)">💰 Pag. pendente</button>
       <button class="filtro-btn" onclick="setFiltro('recibo-pendente',this)">🧾 Recibo pendente</button>
       <button class="filtro-btn" onclick="setFiltro('falta',this)">❌ Falta</button>
+      <button class="filtro-btn" onclick="setFiltro('inativos',this)">⛔ Inativos</button>
     </div>
     <div id="lista-clientes"><div class="empty">Carregando...</div></div>
   </div>
@@ -660,6 +666,9 @@ function renderLista() {
     return sv.some(iso=>(p.pagamentos||{})[iso]&&!(p.recibos||{})[iso]);
   });
   else if(filtroAtivo==='falta') filtrados=dados.filter(p=>(p.sessoes||[]).some(iso=>(p.status_encontros||{})[iso]==='falta'));
+  else if(filtroAtivo==='inativos') filtrados=dados.filter(p=>p.inativo===true);
+  // Excluir inativos dos outros filtros
+  if(filtroAtivo!=='inativos') filtrados=filtrados.filter(p=>!p.inativo);
 
   if(!filtrados.length){
     document.getElementById('lista-clientes').innerHTML='<div class="empty">Nenhum resultado para este filtro.</div>';
@@ -734,7 +743,7 @@ function renderLista() {
       return `<div class="mes-title">${MONTHS[m.month]} ${m.year}</div>${sessHtml}`;
     }).join('');
 
-    return `<div class="cliente-card">
+    return `<div class="cliente-card ${p.inativo?'inativo':''}">
       <div class="cliente-header" onclick="toggleExpand('${p.id}')">
         <div class="avatar">${initials(p.nome_paciente)}</div>
         <div class="cliente-info">
@@ -752,6 +761,7 @@ function renderLista() {
           <button class="btn-link-small" onclick="toggleEditarCliente('${p.id}')">✏️ Editar</button>
           <button class="btn-link-small" onclick="navigator.clipboard.writeText('${link}').then(()=>toast('Link copiado!','success'))">Copiar link</button>
           <button class="btn-link-small" style="background:var(--green-light);color:var(--green);border-color:var(--green-border)" onclick="copiarMensagem('${p.nome_paciente}','${link}')">💬 Mensagem</button>
+          <button class="btn-inativo ${p.inativo?"marcado":""}" onclick="toggleInativo('${p.id}')" title="${p.inativo?'Reativar cliente':'Marcar como inativo'}">${p.inativo?"⛔ Inativo":"Inativar"}</button>
           <button class="btn-del-small" onclick="deletar('${p.id}')" title="Excluir">×</button>
         </div>
         <span class="chevron ${isOpen?'open':''}">▼</span>
@@ -880,6 +890,16 @@ async function removerEncontro(id,iso){
   await api('PATCH',`planejamentos?id=eq.${id}`,{sessoes,pagamentos:pags,recibos:recs,status_encontros:st,forma_pagamento:formas});
   p.sessoes=sessoes;p.pagamentos=pags;p.recibos=recs;p.status_encontros=st;p.forma_pagamento=formas;
   toast('Encontro removido.','success');renderResumo();renderLista();
+}
+
+async function toggleInativo(id){
+  const p=dados.find(x=>x.id===id);
+  if(!p)return;
+  const novoStatus=!p.inativo;
+  await api("PATCH",`planejamentos?id=eq.${id}`,{inativo:novoStatus});
+  p.inativo=novoStatus;
+  toast(novoStatus?"Cliente marcado como inativo":"Cliente reativado","success");
+  renderLista();
 }
 
 async function deletar(id){
@@ -1277,5 +1297,6 @@ function carregarCabecalho() {
 </script>
 </body>
 </html>
+
 
 
