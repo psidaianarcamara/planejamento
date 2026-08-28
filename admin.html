@@ -613,9 +613,11 @@ function renderResumo() {
     sess.forEach(iso=>{
       const valCustom = (p.valores_customizados||{})[iso];
       const valReal = valCustom !== undefined ? valCustom : (p.preco||0);
-      totalValor += valReal;
-      if(pags[iso]){totalPagos++;totalRecebido+=valReal;}
-      if(recs[iso])totalRecibos++;
+      const isRemarcado = status[iso]==='remarcado';
+      const isZero = valReal === 0;
+      if(!isRemarcado && !isZero) totalValor += valReal;
+      if(!isRemarcado && !isZero && pags[iso]){totalPagos++;totalRecebido+=valReal;}
+      if(!isRemarcado && !isZero && recs[iso])totalRecibos++;
       if(pagsC[iso]&&!pags[iso])totalAguard++;
       if(status[iso]==='falta')totalFaltas++;
     });
