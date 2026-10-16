@@ -612,7 +612,7 @@ function renderCobrancas() {
   el.innerHTML = pendentes.map(c => {
     const valorFmt = c.total.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
     const msg = encodeURIComponent(
-      `*Sophia*\n\nOlá, ${c.nome}! Tudo bem? 😊 Passando para lembrar sobre o(s) valor(es) referente(s) à(s) sessão(ões) de ${c.datas} — ${valorFmt}.\nQualquer dúvida, estou à disposição.\n\nAtenciosamente | Consultório Daiana Câmara`
+      `*Sophia:*\n\nOlá, ${c.nome}! Tudo bem? 😊 Passando para lembrar sobre o(s) valor(es) referente(s) à(s) sessão(ões) de ${c.datas} — ${valorFmt}.\nQualquer dúvida, estou à disposição.\n\nAtenciosamente | Consultório Daiana Câmara`
     );
     const telLimpo = c.tel.replace(/\D/g,'');
     const whatsappUrl = telLimpo ? `https://wa.me/55${telLimpo}?text=${msg}` : null;
