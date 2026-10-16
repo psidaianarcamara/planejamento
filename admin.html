@@ -197,6 +197,17 @@
   }
   .privado-blur { filter: blur(6px); user-select: none; pointer-events: none; transition: filter 0.2s; }
   .privado-overlay { position: fixed; inset: 0; z-index: 200; cursor: pointer; }
+
+  /* COBRANÇAS */
+  .cobranca-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); margin-bottom: 8px; flex-wrap: wrap; }
+  .cobranca-info { flex: 1; min-width: 0; }
+  .cobranca-nome { font-size: 14px; font-weight: 700; color: var(--terra-deep); }
+  .cobranca-detalhe { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .cobranca-valor { font-size: 15px; font-weight: 700; color: var(--red); white-space: nowrap; }
+  .btn-whatsapp { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #25D366; color: #fff; border: none; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none; transition: background 0.15s; }
+  .btn-whatsapp:hover { background: #1aab52; }
+  .btn-whatsapp-disabled { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: var(--gray-light); color: var(--gray); border: 1px solid var(--gray-border); border-radius: 99px; font-size: 13px; font-weight: 600; cursor: default; white-space: nowrap; }
+  .cobranca-sem-tel { font-size: 11px; color: var(--text-muted); font-style: italic; }
   .campo-oculto { filter: blur(5px); user-select: none; pointer-events: none; transition: filter 0.2s; }
   .btn-olhinho { background:none; border:none; cursor:pointer; font-size:13px; opacity:0.5; padding:0 2px; flex-shrink:0; }
   .btn-olhinho:hover { opacity: 1; }
@@ -243,6 +254,7 @@
   <div class="tabs-inner">
     <div class="tab active" onclick="showTab('painel')">Painel de controle</div>
     <div class="tab" onclick="showTab('novo')">+ Novo planejamento</div>
+    <div class="tab" onclick="showTab('cobrancas')">💬 Cobranças</div>
     <div class="tab" onclick="showTab('servicos')">⚙️ Serviços</div>
     <div class="tab" onclick="showTab('cabecalho')">✏️ Cabeçalho</div>
     <div class="tab" onclick="showTab('previsao')">📅 Previsão</div>
@@ -273,6 +285,10 @@
         <div class="field full">
           <label>Nome do cliente</label>
           <input id="inp-name" type="text" placeholder="Ex: Henrique">
+        </div>
+        <div class="field full">
+          <label>WhatsApp (com DDD)</label>
+          <input id="inp-tel" type="tel" placeholder="Ex: 84999990000">
         </div>
         <div class="field">
           <label>Tipo de atendimento</label>
@@ -305,6 +321,14 @@
           <button class="btn-copy" onclick="copiarLink()">Copiar</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- COBRANÇAS -->
+  <div id="tab-cobrancas" style="display:none">
+    <div class="card">
+      <div class="card-title">💬 Cobranças pendentes</div>
+      <div id="cobrancas-content"><div class="empty">Carregando...</div></div>
     </div>
   </div>
 
@@ -531,10 +555,89 @@ function toast(msg, type='') {
   setTimeout(() => el.className = 'toast', 3000);
 }
 
+function renderCobrancas() {
+  const el = document.getElementById('cobrancas-content');
+  const pendentes = [];
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  dados.filter(p => !p.inativo).forEach(p => {
+    const sessoes = p.sessoes || [];
+    const status = p.status_encontros || {};
+    const pags = p.pagamentos || {};
+    const valoresCustom = p.valores_customizados || {};
+
+    // Agrupa sessões não pagas por mês
+    const porMes = {};
+    sessoes.forEach(iso => {
+      const statusEnc = status[iso] || 'pendente';
+      if (statusEnc === 'cancelado' || statusEnc === 'falta' || statusEnc === 'remarcado') return;
+      const val = valoresCustom[iso] != null ? parseFloat(valoresCustom[iso]) : p.preco;
+      if (!val || val === 0) return;
+      if (pags[iso]) return; // já pago
+      const [y, m] = iso.split('-');
+      const key = `${y}-${m}`;
+      if (!porMes[key]) porMes[key] = { total: 0, datas: [] };
+      porMes[key].total += val;
+      porMes[key].datas.push(iso);
+    });
+
+    Object.keys(porMes).forEach(key => {
+      const [y, m] = key.split('-');
+      const nomeMes = meses[parseInt(m)-1] + ' ' + y;
+      // Formata as datas: "05/10 e 19/10"
+      const datasFormatadas = porMes[key].datas.map(iso => {
+        const [,, d] = iso.split('-');
+        return `${d}/${m}`;
+      }).join(', ');
+      pendentes.push({
+        nome: p.nome_paciente,
+        tel: p.telefone || '',
+        mes: nomeMes,
+        datas: datasFormatadas,
+        total: porMes[key].total,
+        mesKey: key
+      });
+    });
+  });
+
+  // Ordena por mês
+  pendentes.sort((a,b) => a.mesKey.localeCompare(b.mesKey));
+
+  if (pendentes.length === 0) {
+    el.innerHTML = '<div class="empty">Nenhuma cobrança pendente 🎉</div>';
+    return;
+  }
+
+  el.innerHTML = pendentes.map(c => {
+    const valorFmt = c.total.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+    const msg = encodeURIComponent(
+      `*Sophia*\n\nOlá, ${c.nome}! Tudo bem? 😊 Passando para lembrar sobre o(s) valor(es) referente(s) à(s) sessão(ões) de ${c.datas} — ${valorFmt}.\nQualquer dúvida, estou à disposição.\n\nAtenciosamente | Consultório Daiana Câmara`
+    );
+    const telLimpo = c.tel.replace(/\D/g,'');
+    const whatsappUrl = telLimpo ? `https://wa.me/55${telLimpo}?text=${msg}` : null;
+
+    return `<div class="cobranca-row">
+      <div class="cobranca-info">
+        <div class="cobranca-nome">${c.nome}</div>
+        <div class="cobranca-detalhe">${c.mes} · sessões: ${c.datas}</div>
+        ${!c.tel ? '<div class="cobranca-sem-tel">⚠️ Sem WhatsApp cadastrado</div>' : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+        <span class="cobranca-valor">${valorFmt}</span>
+        ${whatsappUrl
+          ? `<a class="btn-whatsapp" href="${whatsappUrl}" target="_blank">📲 WhatsApp</a>`
+          : `<span class="btn-whatsapp-disabled">📲 Sem número</span>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function showTab(tab) {
-  ['painel','novo','servicos','cabecalho','previsao'].forEach(t => document.getElementById('tab-'+t).style.display = t===tab?'':'none');
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===['painel','novo','servicos','cabecalho','previsao'].indexOf(tab)));
+  ['painel','novo','cobrancas','servicos','cabecalho','previsao'].forEach(t => document.getElementById('tab-'+t).style.display = t===tab?'':'none');
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===['painel','novo','cobrancas','servicos','cabecalho','previsao'].indexOf(tab)));
   if(tab==='cabecalho') carregarCabecalho();
+  if(tab==='cobrancas') renderCobrancas();
   if(tab==='previsao') renderPrevisao();
   if (tab === 'painel') carregarDados();
 }
@@ -567,6 +670,7 @@ function freqLabel(f) { return {semanal:'Semanal',quinzenal:'Quinzenal',mensal:'
 
 async function criarPlanejamento() {
   const name = document.getElementById('inp-name').value.trim();
+  const tel = document.getElementById('inp-tel').value.trim().replace(/\D/g,'');
   const price = parseFloat(document.getElementById('inp-price').value)||0;
   const freq = document.getElementById('inp-freq').value;
   const tipo = document.getElementById('inp-tipo').value;
@@ -580,6 +684,7 @@ async function criarPlanejamento() {
       token, nome_paciente: name, frequencia: freq,
       preco: price, sessoes: newDates,
       tipo_atendimento: tipo,
+      telefone: tel||null,
       pagamentos:{}, recibos:{}, pagamentos_cliente:{},
       forma_pagamento:{}, status_encontros:{}
     });
@@ -590,6 +695,7 @@ async function criarPlanejamento() {
     newDates=[]; renderChips();
     document.getElementById('inp-name').value='';
     document.getElementById('inp-price').value='';
+    document.getElementById('inp-tel').value='';
   } catch(e) { toast('Erro ao salvar.','error'); console.error(e); }
   btn.disabled=false; btn.textContent='Gerar planejamento e link';
 }
@@ -1000,6 +1106,10 @@ function toggleEditarCliente(id) {
           <label>Nome</label>
           <input type="text" id="modal-nome" value="${p.nome_paciente}" style="border:1px solid var(--border);border-radius:var(--radius);padding:9px 11px;font-size:14px;width:100%;outline:none;font-family:inherit;background:var(--bg)">
         </div>
+        <div class="field">
+          <label>WhatsApp (com DDD)</label>
+          <input type="tel" id="modal-tel" value="${p.telefone||''}" placeholder="Ex: 84999990000" style="border:1px solid var(--border);border-radius:var(--radius);padding:9px 11px;font-size:14px;width:100%;outline:none;font-family:inherit;background:var(--bg)">
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="field">
             <label>Valor por encontro (R$)</label>
@@ -1031,12 +1141,14 @@ async function salvarEdicaoCliente(id) {
   const p = dados.find(x => x.id === id);
   if (!p) return;
   const nome = document.getElementById('modal-nome').value.trim();
+  const tel = document.getElementById('modal-tel').value.trim().replace(/\D/g,'');
   const preco = parseFloat(document.getElementById('modal-preco').value) || 0;
   const freq = document.getElementById('modal-freq').value;
   if (!nome) { toast('Informe o nome do cliente', 'error'); return; }
   try {
-    await api('PATCH', `planejamentos?id=eq.${id}`, { nome_paciente: nome, preco, frequencia: freq });
+    await api('PATCH', `planejamentos?id=eq.${id}`, { nome_paciente: nome, preco, frequencia: freq, telefone: tel||null });
     p.nome_paciente = nome;
+    p.telefone = tel||null;
     p.preco = preco;
     p.frequencia = freq;
     const modal = document.getElementById('modal-editar');
