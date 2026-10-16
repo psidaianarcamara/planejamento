@@ -620,10 +620,12 @@ function renderResumo() {
       const valCustom = (p.valores_customizados||{})[iso];
       const valReal = valCustom !== undefined ? valCustom : (p.preco||0);
       const isRemarcado = status[iso]==='remarcado';
+      const isCancelado = status[iso]==='cancelado';
+      const isFalta = status[iso]==='falta';
       const isZero = valReal === 0;
-      if(!isRemarcado && !isZero) totalValor += valReal;
-      if(!isRemarcado && !isZero && pags[iso]){totalPagos++;totalRecebido+=valReal;}
-      if(!isRemarcado && !isZero && recs[iso])totalRecibos++;
+      if(!isRemarcado && !isCancelado && !isFalta && !isZero) totalValor += valReal;
+      if(!isRemarcado && !isCancelado && !isFalta && !isZero && pags[iso]){totalPagos++;totalRecebido+=valReal;}
+      if(!isRemarcado && !isCancelado && !isFalta && !isZero && recs[iso])totalRecibos++;
       if(pagsC[iso]&&!pags[iso])totalAguard++;
       if(status[iso]==='falta')totalFaltas++;
     });
@@ -658,11 +660,11 @@ function renderLista() {
   let filtrados=dados;
   if(filtroAtivo==='aguardando') filtrados=dados.filter(p=>(p.sessoes||[]).some(iso=>(p.pagamentos_cliente||{})[iso]&&!(p.pagamentos||{})[iso]));
   else if(filtroAtivo==='pagamento-pendente') filtrados=dados.filter(p=>{
-    const sv=(p.sessoes||[]).filter(iso=>(p.status_encontros||{})[iso]!=='remarcado'&&((p.valores_custom||{})[iso]!==0)&&!((p.valores_custom||{})[iso]===undefined&&p.preco===0));
+    const sv=(p.sessoes||[]).filter(iso=>(p.status_encontros||{})[iso]!=='remarcado'&&((p.valores_customizados||{})[iso]!==0)&&!((p.valores_customizados||{})[iso]===undefined&&p.preco===0));
     return sv.some(iso=>!(p.pagamentos||{})[iso]);
   });
   else if(filtroAtivo==='recibo-pendente') filtrados=dados.filter(p=>{
-    const sv=(p.sessoes||[]).filter(iso=>(p.status_encontros||{})[iso]!=='remarcado'&&((p.valores_custom||{})[iso]!==0)&&!((p.valores_custom||{})[iso]===undefined&&p.preco===0));
+    const sv=(p.sessoes||[]).filter(iso=>(p.status_encontros||{})[iso]!=='remarcado'&&((p.valores_customizados||{})[iso]!==0)&&!((p.valores_customizados||{})[iso]===undefined&&p.preco===0));
     return sv.some(iso=>(p.pagamentos||{})[iso]&&!(p.recibos||{})[iso]);
   });
   else if(filtroAtivo==='falta') filtrados=dados.filter(p=>(p.sessoes||[]).some(iso=>(p.status_encontros||{})[iso]==='falta'));
@@ -678,7 +680,7 @@ function renderLista() {
   document.getElementById('lista-clientes').innerHTML=filtrados.map(p=>{
     const sess=p.sessoes||[], pags=p.pagamentos||{}, recs=p.recibos||{},
           pagsC=p.pagamentos_cliente||{}, status=p.status_encontros||{}, formas=p.forma_pagamento||{};
-    const sessValidas=sess.filter(iso=>status[iso]!=="remarcado"&&((p.valores_custom||{})[iso]!==0)&&!((p.valores_custom||{})[iso]===undefined&&p.preco===0));
+    const sessValidas=sess.filter(iso=>status[iso]!=="remarcado"&&((p.valores_customizados||{})[iso]!==0)&&!((p.valores_customizados||{})[iso]===undefined&&p.preco===0));
     const pagos=sessValidas.filter(iso=>pags[iso]).length;
     const aguard=sess.filter(iso=>pagsC[iso]&&!pags[iso]).length;
     const pendRec=pagos-(sessValidas.filter(iso=>recs[iso]).length);
@@ -1130,7 +1132,6 @@ function togglePrevPrivado(key) {
 
 function renderPrevisao() {
   const hoje = new Date();
-  const mesAtual = hoje.getFullYear() * 100 + hoje.getMonth();
   const MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const mapa = {};
 
@@ -1141,15 +1142,13 @@ function renderPrevisao() {
     sess.forEach(iso => {
       const parts = iso.split('-').map(Number);
       const y = parts[0], m = parts[1];
-      const mesKey = y * 100 + (m - 1);
-      if (mesKey < mesAtual) return;
       const key = y + '_' + (m-1);
       if (!mapa[key]) mapa[key] = { key, year: y, month: m-1, encontros: [], total: 0, recebido: 0, pendente: 0 };
       const valor = valoresC[iso] !== undefined ? valoresC[iso] : (p.preco || 0);
       const pago = !!pags[iso];
       const statusEnc = (p.status_encontros || {})[iso] || '';
-      // Excluir da previsão: valor zero, cancelado ou falta
-      if (valor === 0 || statusEnc === 'cancelado' || statusEnc === 'falta') return;
+      // Excluir da previsão: valor zero, cancelado, falta ou remarcado
+      if (valor === 0 || statusEnc === 'cancelado' || statusEnc === 'falta' || statusEnc === 'remarcado') return;
       mapa[key].encontros.push({ nome: p.nome_paciente, iso, valor, pago });
       mapa[key].total += valor;
       if (pago) mapa[key].recebido += valor; else mapa[key].pendente += valor;
