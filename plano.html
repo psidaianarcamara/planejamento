@@ -181,6 +181,10 @@ async function carregar() {
     const data = await rpc('get_financial_plan_by_token', { p_token: token });
     if (!data || data.length === 0) { renderErro('Planejamento não encontrado', 'Este link pode ter expirado ou sido removido.'); return; }
     plano = data[0];
+    if (plano.inativo === true) {
+      renderErro('Acesso encerrado', 'Este planejamento não está mais disponível. Em caso de dúvidas, entre em contato com o consultório.');
+      return;
+    }
     plano.pagamentos_cliente = plano.pagamentos_cliente || {};
     plano.pagamentos = plano.pagamentos || {};
     render();
