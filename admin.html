@@ -808,6 +808,7 @@ function renderLista() {
     const encontrosHtml=byMonth.map(m=>{
       const sessHtml=m.isos.map(iso=>{
         const pago=!!pags[iso], recibo=!!recs[iso];
+        const dataPag=pags[iso]&&typeof pags[iso]==='string'?(()=>{const[y,m,d]=pags[iso].split('-');return d+'/'+m;})():'';
         const clienteInformou=!!pagsC[iso]&&!pago;
         const stEnc=status[iso]||'';
         const forma=formas[iso]||'';
@@ -840,7 +841,7 @@ function renderLista() {
           </div>
           <div class="status-group">
             <span class="status-badge ${pago?'pago':clienteInformou?'aguardando':'pago-pendente'}" onclick="togglePag('${p.id}','${iso}')" title="${pago?'Clique para desmarcar':clienteInformou?'Cliente informou — clique para confirmar':'Confirmar pagamento'}">
-              ${pago?'✓ Pago':clienteInformou?'🕐 Confirmar?':'💰 Pendente'}
+              ${pago?`✓ Pago${dataPag?` <span style="opacity:0.7;font-size:10px">${dataPag}</span>`:''}`:clienteInformou?'🕐 Confirmar?':'💰 Pendente'}
             </span>
             <span class="status-badge ${!pago?'recibo-disabled':recibo?'recibo':'recibo-pendente'}" onclick="${pago?`toggleRec('${p.id}','${iso}')`:''}" title="${!pago?'Aguardando pagamento':recibo?'Desmarcar recibo':'Marcar recibo emitido'}">
               ${recibo?'✓ Recibo':'🧾 Recibo'}
@@ -962,11 +963,19 @@ async function salvarForma(id,iso,forma){
 async function togglePag(id,iso){
   const p=dados.find(x=>x.id===id);if(!p)return;
   const pags={...(p.pagamentos||{})};
-  pags[iso]=!pags[iso];
-  if(!pags[iso]){const recs={...(p.recibos||{})};delete recs[iso];p.recibos=recs;await api('PATCH',`planejamentos?id=eq.${id}`,{pagamentos:pags,recibos:recs});}
-  else await api('PATCH',`planejamentos?id=eq.${id}`,{pagamentos:pags});
+  const jaPago=!!(pags[iso]);
+  if(jaPago){
+    delete pags[iso];
+    const recs={...(p.recibos||{})};delete recs[iso];p.recibos=recs;
+    await api('PATCH',`planejamentos?id=eq.${id}`,{pagamentos:pags,recibos:recs});
+    toast('Pagamento desmarcado','');
+  } else {
+    const hoje=new Date().toISOString().split('T')[0];
+    pags[iso]=hoje;
+    await api('PATCH',`planejamentos?id=eq.${id}`,{pagamentos:pags});
+    toast('Pagamento confirmado ✓','success');
+  }
   p.pagamentos=pags;
-  toast(pags[iso]?'Pagamento confirmado ✓':'Pagamento desmarcado',pags[iso]?'success':'');
   renderResumo();renderLista();
 }
 
