@@ -302,6 +302,7 @@ function render() {
     }, 0);
     const sessionsHtml = m.isos.map(iso => {
       const confirmado = !!pags[iso];
+      const dataPag = confirmado ? (pags[iso] && typeof pags[iso]==='string' ? (()=>{const[y,m,d]=pags[iso].split('-');return d+'/'+m;})() : (()=>{const[y,m,d]=iso.split('-');return d+'/'+m;})()) : '';
       const solicitado = !!pagsCliente[iso] && !confirmado;
       const stEnc = (plano.status_encontros || {})[iso] || '';
       const novaData = (plano.datas_reagendadas || {})[iso] || '';
@@ -324,7 +325,7 @@ function render() {
               ${confirmado||solicitado?'checked':''}
               ${confirmado?'disabled':''}
               onchange="togglePagCliente('${iso}')">
-            <span class="pay-text">${confirmado ? 'Pagamento confirmado ✓' : solicitado ? 'Pagamento informado ✓' : pagPendente ? '⚠ Pagamento pendente' : 'Informar pagamento'}</span>
+            <span class="pay-text">${confirmado ? `Pagamento confirmado ✓${dataPag?' <span style="opacity:0.65;font-size:11px">'+dataPag+'</span>':''}` : solicitado ? 'Pagamento informado ✓' : pagPendente ? '⚠ Pagamento pendente' : 'Informar pagamento'}</span>
           </label>
           ${solicitado && !confirmado ? '<span class="aguardando-text">Aguardando confirmação...</span>' : ''}
           ` : ''}
