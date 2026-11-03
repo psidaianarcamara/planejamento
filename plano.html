@@ -246,7 +246,7 @@ function render() {
   const sessoesValidas = sessoes.filter(iso => {
     const st = statusEncs[iso] || '';
     const v = valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco;
-    return st !== 'cancelado' && st !== 'falta' && v > 0;
+    return st !== 'cancelado' && st !== 'falta' && st !== 'remarcado' && v > 0;
   });
   const valorTotal = sessoesValidas.reduce((acc, iso) => acc + (valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco), 0);
   const valorPago = sessoesValidas.filter(iso => pags[iso]).reduce((acc, iso) => acc + (valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco), 0);
@@ -295,7 +295,7 @@ function render() {
     const confirmadosNoMes = m.isos.filter(iso => pags[iso]).length;
     const totalMes = m.isos.reduce((acc, i) => {
       const st = (plano.status_encontros||{})[i] || '';
-      if (st === 'cancelado' || st === 'falta') return acc;
+      if (st === 'cancelado' || st === 'falta' || st === 'remarcado') return acc;
       const vc = (plano.valores_customizados||{})[i];
       const v = vc !== undefined ? vc : plano.preco;
       return acc + v;
