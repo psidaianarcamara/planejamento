@@ -243,13 +243,17 @@ function render() {
   const solicitados = sessoes.filter(iso => pagsCliente[iso] && !pags[iso]).length;
   const valoresCustom = plano.valores_customizados || {};
   const statusEncs = plano.status_encontros || {};
+  const destinosReagendGlobal = new Set(Object.values(plano.datas_reagendadas || {}));
+  const valorReal = iso => {
+    const vc = valoresCustom[iso];
+    return (vc === 0 && destinosReagendGlobal.has(iso)) ? plano.preco : (vc !== undefined ? vc : plano.preco);
+  };
   const sessoesValidas = sessoes.filter(iso => {
     const st = statusEncs[iso] || '';
-    const v = valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco;
-    return st !== 'cancelado' && st !== 'falta' && st !== 'remarcado' && v > 0;
+    return st !== 'cancelado' && st !== 'falta' && st !== 'remarcado' && valorReal(iso) > 0;
   });
-  const valorTotal = sessoesValidas.reduce((acc, iso) => acc + (valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco), 0);
-  const valorPago = sessoesValidas.filter(iso => pags[iso]).reduce((acc, iso) => acc + (valoresCustom[iso] !== undefined ? valoresCustom[iso] : plano.preco), 0);
+  const valorTotal = sessoesValidas.reduce((acc, iso) => acc + valorReal(iso), 0);
+  const valorPago = sessoesValidas.filter(iso => pags[iso]).reduce((acc, iso) => acc + valorReal(iso), 0);
 
   let html = `
     <div class="welcome">
@@ -291,13 +295,17 @@ function render() {
       <div class="stat"><div class="stat-label">A pagar</div><div class="stat-value" style="font-size:15px">${fmtBRL(valorTotal-valorPago)}</div></div>
     </div>`;
 
+  // Sessões que são destino de um reagendamento — não devem ter valor zerado
+  const destinosReagend = new Set(Object.values(plano.datas_reagendadas || {}));
+
   byMonth.forEach(m => {
     const confirmadosNoMes = m.isos.filter(iso => pags[iso]).length;
     const totalMes = m.isos.reduce((acc, i) => {
       const st = (plano.status_encontros||{})[i] || '';
       if (st === 'cancelado' || st === 'falta' || st === 'remarcado') return acc;
       const vc = (plano.valores_customizados||{})[i];
-      const v = vc !== undefined ? vc : plano.preco;
+      // Se é destino de reagendamento e valor customizado é 0, usar preço padrão
+      const v = (vc === 0 && destinosReagend.has(i)) ? plano.preco : (vc !== undefined ? vc : plano.preco);
       return acc + v;
     }, 0);
     const sessionsHtml = m.isos.map(iso => {
