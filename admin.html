@@ -840,7 +840,7 @@ function renderLista() {
             </div>
           </div>
           <div class="status-group">
-            <span class="status-badge ${pago?'pago':clienteInformou?'aguardando':'pago-pendente'}" onclick="togglePag('${p.id}','${iso}')" title="${pago?'Clique para desmarcar':clienteInformou?'Cliente informou — clique para confirmar':'Confirmar pagamento'}">
+            <span class="status-badge ${pago?'pago':clienteInformou?'aguardando':'pago-pendente'}" onclick="togglePag('${p.id}','${iso}')" ondblclick="${pago?`editarDataPag('${p.id}','${iso}');event.stopPropagation()`:''}" title="${pago?'Clique para desmarcar · Duplo clique para editar data':clienteInformou?'Cliente informou — clique para confirmar':'Confirmar pagamento'}">
               ${pago?`✓ Pago${dataPag?` <span style="opacity:0.7;font-size:10px">${dataPag}</span>`:''}`:clienteInformou?'🕐 Confirmar?':'💰 Pendente'}
             </span>
             <span class="status-badge ${!pago?'recibo-disabled':recibo?'recibo':'recibo-pendente'}" onclick="${pago?`toggleRec('${p.id}','${iso}')`:''}" title="${!pago?'Aguardando pagamento':recibo?'Desmarcar recibo':'Marcar recibo emitido'}">
@@ -958,6 +958,40 @@ async function salvarForma(id,iso,forma){
   p.forma_pagamento=formas;
   if(forma)toast('Forma de pagamento salva!','success');
   renderLista();
+}
+
+function editarDataPag(id,iso){
+  const p=dados.find(x=>x.id===id);if(!p)return;
+  const pags=p.pagamentos||{};
+  const dataAtual=pags[iso]&&typeof pags[iso]==='string'?pags[iso]:iso;
+  const old=document.getElementById('modal-datapag');if(old)old.remove();
+  const modal=document.createElement('div');
+  modal.id='modal-datapag';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999';
+  modal.innerHTML=`<div style="background:var(--white);border-radius:16px;padding:24px;width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <div style="font-weight:700;font-size:15px;margin-bottom:16px">📅 Data do pagamento</div>
+    <input type="date" id="datapag-input" value="${dataAtual}" style="border:1px solid var(--border);border-radius:var(--radius);padding:9px 11px;font-size:14px;width:100%;outline:none;font-family:inherit;background:var(--bg);box-sizing:border-box">
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button onclick="document.getElementById('modal-datapag').remove()" style="flex:1;padding:10px;background:none;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text-muted);cursor:pointer">Cancelar</button>
+      <button onclick="salvarDataPag('${id}','${iso}')" style="flex:1;padding:10px;background:var(--terra);border:none;border-radius:var(--radius);font-size:14px;color:#fff;cursor:pointer;font-weight:600">Salvar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  document.getElementById('datapag-input').focus();
+}
+
+async function salvarDataPag(id,iso){
+  const nova=document.getElementById('datapag-input').value;
+  if(!nova){document.getElementById('modal-datapag').remove();return;}
+  const p=dados.find(x=>x.id===id);if(!p)return;
+  const pags={...(p.pagamentos||{})};
+  pags[iso]=nova;
+  await api('PATCH',`planejamentos?id=eq.${id}`,{pagamentos:pags});
+  p.pagamentos=pags;
+  document.getElementById('modal-datapag').remove();
+  toast('Data do pagamento atualizada ✓','success');
+  renderResumo();renderLista();
 }
 
 async function togglePag(id,iso){
