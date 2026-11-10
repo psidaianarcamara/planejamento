@@ -840,9 +840,9 @@ function renderLista() {
             </div>
           </div>
           <div class="status-group">
-            <span class="status-badge ${pago?'pago':clienteInformou?'aguardando':'pago-pendente'}" onclick="togglePag('${p.id}','${iso}')" ondblclick="${pago?`editarDataPag('${p.id}','${iso}');event.stopPropagation()`:''}" title="${pago?'Clique para desmarcar · Duplo clique para editar data':clienteInformou?'Cliente informou — clique para confirmar':'Confirmar pagamento'}">
+            <span class="status-badge ${pago?'pago':clienteInformou?'aguardando':'pago-pendente'}" onclick="togglePag('${p.id}','${iso}')" title="${pago?'Clique para desmarcar':clienteInformou?'Cliente informou — clique para confirmar':'Confirmar pagamento'}">
               ${pago?`✓ Pago${dataPag?` <span style="opacity:0.7;font-size:10px">${dataPag}</span>`:''}`:clienteInformou?'🕐 Confirmar?':'💰 Pendente'}
-            </span>
+            </span>${pago?`<button onclick="editarDataPag('${p.id}','${iso}')" style="background:none;border:1px dashed var(--border);border-radius:6px;padding:1px 5px;font-size:11px;color:var(--text-muted);cursor:pointer;line-height:1.4" title="Editar data do pagamento">✏️</button>`:''}
             <span class="status-badge ${!pago?'recibo-disabled':recibo?'recibo':'recibo-pendente'}" onclick="${pago?`toggleRec('${p.id}','${iso}')`:''}" title="${!pago?'Aguardando pagamento':recibo?'Desmarcar recibo':'Marcar recibo emitido'}">
               ${recibo?'✓ Recibo':'🧾 Recibo'}
             </span>
