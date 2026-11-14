@@ -186,7 +186,7 @@ async function carregarCabecalho() {
           const hoje = new Date(); hoje.setHours(0,0,0,0);
           const ini = new Date(ferias.inicio + 'T00:00:00');
           const fim = new Date(ferias.fim + 'T00:00:00');
-          if (hoje >= ini && hoje <= fim) {
+          if (hoje <= fim) {
             const [yi,mi,di] = ferias.inicio.split('-');
             const [yf,mf,df] = ferias.fim.split('-');
             const msgPadrao = `Estou de férias de ${di}/${mi} a ${df}/${mf}/${yf}. Retorno em breve!`;
