@@ -391,6 +391,30 @@
       <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:var(--radius);font-size:12px;color:var(--text-muted)">
         ⓘ Essas informações aparecem no topo da página que o cliente vê ao abrir o link.
       </div>
+
+      <div style="height:1px;background:var(--border);margin:24px 0"></div>
+
+      <!-- FÉRIAS -->
+      <div style="font-size:12px;font-weight:700;color:var(--terra);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">🏖️ Período de férias</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Quando preenchido, um aviso aparece na página do cliente durante esse período.</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Início das férias</label>
+          <input id="ferias-inicio" type="date">
+        </div>
+        <div class="field">
+          <label>Fim das férias</label>
+          <input id="ferias-fim" type="date">
+        </div>
+        <div class="field full">
+          <label>Mensagem para o cliente (opcional)</label>
+          <input id="ferias-msg" type="text" placeholder="Ex: Estarei de férias e retorno em 03/02. Em caso de urgência, entre em contato.">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+        <button onclick="salvarFerias()" style="padding:9px 20px;background:var(--terra);color:var(--white);border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;">Salvar férias</button>
+        <button onclick="limparFerias()" style="padding:9px 20px;background:none;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text-muted);cursor:pointer;">Remover aviso</button>
+      </div>
     </div>
   </div>
 
@@ -1447,6 +1471,47 @@ function carregarCabecalho() {
     document.getElementById('adm-titulo').value = adm.titulo || '';
     document.getElementById('adm-sub').value = adm.sub || '';
   }
+  // Carregar férias
+  const savedFerias = localStorage.getItem('dc-ferias');
+  if (savedFerias) {
+    const f = JSON.parse(savedFerias);
+    document.getElementById('ferias-inicio').value = f.inicio || '';
+    document.getElementById('ferias-fim').value = f.fim || '';
+    document.getElementById('ferias-msg').value = f.msg || '';
+  }
+}
+
+async function salvarFerias() {
+  const f = {
+    inicio: document.getElementById('ferias-inicio').value,
+    fim: document.getElementById('ferias-fim').value,
+    msg: document.getElementById('ferias-msg').value.trim(),
+  };
+  if (!f.inicio || !f.fim) { toast('Preencha as datas de início e fim.', ''); return; }
+  localStorage.setItem('dc-ferias', JSON.stringify(f));
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/planejamentos?token=eq.CABECALHO_V2', {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ valores_customizados: { ferias: f } })
+    });
+    toast('Período de férias salvo ✓', 'success');
+  } catch(e) { toast('Férias salvas localmente.', 'success'); }
+}
+
+async function limparFerias() {
+  localStorage.removeItem('dc-ferias');
+  document.getElementById('ferias-inicio').value = '';
+  document.getElementById('ferias-fim').value = '';
+  document.getElementById('ferias-msg').value = '';
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/planejamentos?token=eq.CABECALHO_V2', {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ valores_customizados: { ferias: null } })
+    });
+    toast('Aviso de férias removido ✓', 'success');
+  } catch(e) { toast('Aviso removido localmente.', 'success'); }
 }
 
 </script>
