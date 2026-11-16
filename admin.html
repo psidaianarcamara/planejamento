@@ -1489,11 +1489,16 @@ async function salvarFerias() {
   };
   if (!f.inicio || !f.fim) { toast('Preencha as datas de início e fim.', ''); return; }
   localStorage.setItem('dc-ferias', JSON.stringify(f));
+  // Salvar dentro do tipo_atendimento junto com o cabeçalho
+  const cabSaved = localStorage.getItem('dc-cabecalho');
+  const cab = cabSaved ? JSON.parse(cabSaved) : {};
+  cab.ferias = f;
+  localStorage.setItem('dc-cabecalho', JSON.stringify(cab));
   try {
     await fetch(SUPABASE_URL + '/rest/v1/planejamentos?token=eq.CABECALHO_V2', {
       method: 'PATCH',
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recibos: { ferias: f } })
+      body: JSON.stringify({ tipo_atendimento: JSON.stringify(cab) })
     });
     toast('Período de férias salvo ✓', 'success');
   } catch(e) { toast('Férias salvas localmente.', 'success'); }
@@ -1504,11 +1509,15 @@ async function limparFerias() {
   document.getElementById('ferias-inicio').value = '';
   document.getElementById('ferias-fim').value = '';
   document.getElementById('ferias-msg').value = '';
+  const cabSaved = localStorage.getItem('dc-cabecalho');
+  const cab = cabSaved ? JSON.parse(cabSaved) : {};
+  delete cab.ferias;
+  localStorage.setItem('dc-cabecalho', JSON.stringify(cab));
   try {
     await fetch(SUPABASE_URL + '/rest/v1/planejamentos?token=eq.CABECALHO_V2', {
       method: 'PATCH',
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recibos: {} })
+      body: JSON.stringify({ tipo_atendimento: JSON.stringify(cab) })
     });
     toast('Aviso de férias removido ✓', 'success');
   } catch(e) { toast('Aviso removido localmente.', 'success'); }
