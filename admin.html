@@ -1423,6 +1423,8 @@ function sair() {
 }
 
 async function salvarCabecalho() {
+  // Preservar ferias existentes ao salvar cabeçalho
+  const cabAtual = (() => { try { return JSON.parse(localStorage.getItem('dc-cabecalho') || '{}'); } catch(e) { return {}; } })();
   const cab = {
     nome: document.getElementById('cab-nome').value.trim(),
     sub: document.getElementById('cab-sub').value.trim(),
@@ -1430,6 +1432,7 @@ async function salvarCabecalho() {
     rod1: document.getElementById('cab-rod1').value.trim(),
     rod2: document.getElementById('cab-rod2').value.trim(),
   };
+  if (cabAtual.ferias) cab.ferias = cabAtual.ferias;
   localStorage.setItem('dc-cabecalho', JSON.stringify(cab));
   // Salvar no Supabase para o plano.html ler
   try {
@@ -1495,13 +1498,20 @@ async function salvarFerias() {
   cab.ferias = f;
   localStorage.setItem('dc-cabecalho', JSON.stringify(cab));
   try {
-    await fetch(SUPABASE_URL + '/rest/v1/planejamentos?token=eq.CABECALHO_V2', {
+    const token = accessToken || SUPABASE_KEY;
+    const r = await fetch(SUPABASE_URL + '/rest/v1/planejamentos?token=eq.CABECALHO_V2', {
       method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ tipo_atendimento: JSON.stringify(cab) })
     });
-    toast('Período de férias salvo ✓', 'success');
-  } catch(e) { toast('Férias salvas localmente.', 'success'); }
+    if (!r.ok) {
+      const err = await r.text();
+      console.error('Erro ao salvar férias:', r.status, err);
+      toast('Erro ao salvar férias: ' + r.status, '');
+    } else {
+      toast('Período de férias salvo ✓', 'success');
+    }
+  } catch(e) { console.error('Exceção ao salvar férias:', e); toast('Erro ao salvar férias.', ''); }
 }
 
 async function limparFerias() {
