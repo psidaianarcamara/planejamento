@@ -172,14 +172,18 @@ async function carregarCabecalho() {
       try {
         if (row.tipo_atendimento) {
           const cab = JSON.parse(row.tipo_atendimento);
+          console.log('[DEBUG ferias] tipo_atendimento:', JSON.stringify(cab));
           if (cab.nome) document.getElementById('hdr-nome').textContent = cab.nome;
           if (cab.sub) document.getElementById('hdr-sub').textContent = cab.sub;
           if (cab.esp) document.getElementById('hdr-esp').textContent = cab.esp;
           if (cab.rod1) document.getElementById('ftr-rod1').textContent = cab.rod1;
           if (cab.rod2) document.getElementById('ftr-rod2').textContent = cab.rod2;
           cabFerias = cab.ferias || null;
+          console.log('[DEBUG ferias] cabFerias:', JSON.stringify(cabFerias));
+        } else {
+          console.log('[DEBUG ferias] tipo_atendimento está vazio/nulo');
         }
-      } catch(e) {}
+      } catch(e) { console.log('[DEBUG ferias] erro ao parsear:', e); }
       // Exibir aviso de férias se dentro do período
       try {
         const ferias = cabFerias;
