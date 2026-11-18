@@ -394,6 +394,26 @@
 
       <div style="height:1px;background:var(--border);margin:24px 0"></div>
 
+      <!-- PIX -->
+      <div style="font-size:12px;font-weight:700;color:var(--terra);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">💳 Dados PIX</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Chave PIX</label>
+          <input id="pix-chave" type="text" placeholder="Ex: psidaianacamara@gmail.com">
+        </div>
+        <div class="field">
+          <label>Tipo da chave</label>
+          <input id="pix-tipo" type="text" placeholder="Ex: E-mail, CPF, Telefone">
+        </div>
+        <div class="field full">
+          <label>Nome do favorecido</label>
+          <input id="pix-nome" type="text" placeholder="Ex: Consultório Daiana Câmara">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="salvarCabecalho()" style="margin-top:16px">Salvar dados PIX</button>
+
+      <div style="height:1px;background:var(--border);margin:24px 0"></div>
+
       <!-- FÉRIAS -->
       <div style="font-size:12px;font-weight:700;color:var(--terra);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">🏖️ Período de férias</div>
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Quando preenchido, um aviso aparece na página do cliente imediatamente e fica visível até o fim das férias.</div>
@@ -1431,6 +1451,9 @@ async function salvarCabecalho() {
     esp: document.getElementById('cab-esp').value.trim(),
     rod1: document.getElementById('cab-rod1').value.trim(),
     rod2: document.getElementById('cab-rod2').value.trim(),
+    pix: document.getElementById('pix-chave').value.trim(),
+    pixTipo: document.getElementById('pix-tipo').value.trim(),
+    pixNome: document.getElementById('pix-nome').value.trim(),
   };
   if (cabAtual.ferias) cab.ferias = cabAtual.ferias;
   localStorage.setItem('dc-cabecalho', JSON.stringify(cab));
@@ -1467,6 +1490,9 @@ function carregarCabecalho() {
     document.getElementById('cab-esp').value = cab.esp || '';
     document.getElementById('cab-rod1').value = cab.rod1 || '';
     document.getElementById('cab-rod2').value = cab.rod2 || '';
+    document.getElementById('pix-chave').value = cab.pix || '';
+    document.getElementById('pix-tipo').value = cab.pixTipo || '';
+    document.getElementById('pix-nome').value = cab.pixNome || '';
   }
   const savedAdm = localStorage.getItem('dc-cabecalho-admin');
   if (savedAdm) {
